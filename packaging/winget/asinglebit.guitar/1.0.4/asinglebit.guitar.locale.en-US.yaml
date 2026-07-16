@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: asinglebit.guitar
+PackageVersion: 1.0.4
+PackageLocale: en-US
+Publisher: asinglebit
+PublisherUrl: https://github.com/asinglebit
+PublisherSupportUrl: https://github.com/asinglebit/guitar/issues
+PackageName: guitar
+PackageUrl: https://github.com/asinglebit/guitar
+License: GPL-3.0-only
+LicenseUrl: https://github.com/asinglebit/guitar/blob/main/LICENSE
+ShortDescription: Terminal based git interface
+Tags:
+- git
+- tui
+- terminal
+- cli
+- rust
+ReleaseNotesUrl: https://github.com/asinglebit/guitar/releases/tag/v1.0.4
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

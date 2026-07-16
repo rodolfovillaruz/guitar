@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: asinglebit.guitar
+PackageVersion: 1.0.4
+InstallerType: portable
+Commands:
+- guitar
+Dependencies:
+  PackageDependencies:
+  - PackageIdentifier: Microsoft.VCRedist.2015+.x64
+ReleaseDate: 2026-06-21
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/asinglebit/guitar/releases/download/v1.0.4/guitar.exe
+  InstallerSha256: F4D4AAAE1DB2087E7245EE97C761326769ABC53C2F894CA8B82C37760A6C7A82
+ManifestType: installer
+ManifestVersion: 1.10.0
