@@ -1052,8 +1052,8 @@ impl App {
 
             // Commit actions require a concrete identity, so missing config is treated as fatal.
             let (name, email) = get_git_user_info(repo).expect("Couldn't get user credentials");
-            self.name = name.unwrap();
-            self.email = email.unwrap();
+            self.name = name;
+            self.email = email;
 
             // The spinner reflects walker activity, not individual git network commands.
             self.spinner.start();
@@ -1137,8 +1137,7 @@ impl App {
         ) {
             return false;
         }
-        // reload() unwraps the configured identity, so reloading without one would panic the app.
-        self.repo.as_ref().and_then(|repo| get_git_user_info(repo).ok()).is_some_and(|(name, email)| name.is_some() && email.is_some())
+        self.repo.is_some()
     }
 
     // Drain the watcher channel and feed the result to the debounce.
