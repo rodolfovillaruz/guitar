@@ -1030,12 +1030,13 @@ impl App {
         }
     }
 
-    // Auto-reload the repository when the git directory changes on disk, after a
-    // short debounce so a burst of writes (fetch, rebase, checkout from another
-    // terminal) settles into a single reload. Held back while a modal, a git or
-    // network operation, or a non-graph view is in front, so the refresh never
-    // yanks state out from under the user; the change is picked up once the app
-    // returns to an idle graph or viewer.
+    // Auto-reload the repository when the git directory changes on disk. The
+    // watcher's debounce is leading-edge: the first change (fetch, rebase,
+    // checkout from another terminal) reloads promptly, and a burst is collapsed
+    // into one trailing reload once the git directory goes quiet. Held back while
+    // a modal, a git or network operation, or a non-graph view is in front, so
+    // the refresh never yanks state out from under the user; the change is picked
+    // up once the app returns to an idle graph or viewer.
     fn poll_git_watcher(&mut self) {
         let is_idle = self.repo.is_some()
             && matches!(self.viewport, Viewport::Graph | Viewport::Viewer)

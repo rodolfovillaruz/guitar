@@ -906,7 +906,7 @@ Submodule support is intentionally bounded:
 `guitar` watches the open repository's git directory and reloads on its own when it changes, so commits, checkouts, fetches, rebases, or stashes performed in another terminal show up without pressing `r`.
 
 - The watcher polls `HEAD`, `index`, `packed-refs`, the in-progress operation heads (`MERGE_HEAD`, `CHERRY_PICK_HEAD`, and similar), and the `refs` and `logs` trees. The object database is never scanned, so cost stays flat on large repositories.
-- Changes are debounced by three seconds. A burst of writes, such as a fetch or an interactive rebase, settles into a single reload once the git directory goes quiet.
+- The debounce is leading-edge with a three-second window. The first change reloads right away; a burst of writes, such as a fetch or an interactive rebase, is then collapsed into one more reload once the git directory goes quiet, so the settled end state is picked up too. At most one reload per window.
 - Auto reload is held back while a modal, a running Git or network operation, or the settings and splash views are in front, and applies once focus returns to an idle graph or viewer. It behaves exactly like the manual reload key, including graph selection restore.
 - Linked worktrees are covered through the repository's common directory.
 

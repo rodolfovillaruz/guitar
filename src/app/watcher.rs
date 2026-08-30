@@ -26,16 +26,25 @@ const DEFAULT_POLL_INTERVAL: Duration = Duration::from_millis(500);
 /// The main loop calls [`GitWatcher::poll`] once per tick. It hashes the
 /// modification metadata of the files and ref trees that reflect meaningful
 /// repository state (HEAD moves, staging, fetches, branch and tag updates,
-/// in-progress operations). When that hash changes a debounce timer starts;
-/// once the git directory has been quiet for `debounce`, `poll` returns `true`
-/// so the caller can reload exactly as if the user pressed the reload key.
+/// in-progress operations). The debounce is leading-edge: the first observed
+/// change makes `poll` return `true` right away, so the reload is prompt. That
+/// opens a quiet window of `debounce`; further changes inside it are collapsed
+/// and, if there were any, produce one trailing `true` once the git directory
+/// finally goes quiet (so the settled end state of a fetch or rebase is picked
+/// up too). At most one reload is requested per `debounce` window.
 pub struct GitWatcher {
     dirs: Vec<PathBuf>,
     debounce: Duration,
     poll_interval: Duration,
     last_poll: Option<Instant>,
     signature: u64,
-    pending_since: Option<Instant>,
+    // End of the current quiet window. `None` means armed: the next change fires
+    // immediately. `Some` means a reload already fired and further changes are
+    // being collapsed until the git directory stays quiet through this instant.
+    quiet_until: Option<Instant>,
+    // A change was observed during the quiet window, so a trailing reload is owed
+    // once it expires.
+    trailing_reload_owed: bool,
 }
 
 impl GitWatcher {
@@ -49,7 +58,7 @@ impl GitWatcher {
             dirs.push(common_dir);
         }
 
-        let mut watcher = Self { dirs, debounce: DEFAULT_DEBOUNCE, poll_interval: DEFAULT_POLL_INTERVAL, last_poll: None, signature: 0, pending_since: None };
+        let mut watcher = Self { dirs, debounce: DEFAULT_DEBOUNCE, poll_interval: DEFAULT_POLL_INTERVAL, last_poll: None, signature: 0, quiet_until: None, trailing_reload_owed: false };
         // Seed the baseline so the first real change is what schedules a reload,
         // not the watcher coming online.
         watcher.signature = watcher.compute_signature();
@@ -57,9 +66,12 @@ impl GitWatcher {
     }
 
     /// Re-scan the git directory (at most once per poll interval) and report
-    /// whether a debounced reload is now due. Returns `true` at most once per
-    /// burst of activity, after `debounce` of quiet.
+    /// whether a reload is now due. The first change in a burst returns `true`
+    /// immediately; a burst then yields one more `true` after `debounce` of
+    /// quiet. Never more than one `true` per `debounce` window.
     pub fn poll(&mut self, now: Instant) -> bool {
+        let mut changed = false;
+
         let due_for_scan = match self.last_poll {
             Some(last) => now.duration_since(last) >= self.poll_interval,
             None => true,
@@ -70,16 +82,40 @@ impl GitWatcher {
             let signature = self.compute_signature();
             if signature != self.signature {
                 self.signature = signature;
-                self.pending_since = Some(now);
+                changed = true;
             }
         }
 
-        match self.pending_since {
-            Some(since) if now.duration_since(since) >= self.debounce => {
-                self.pending_since = None;
-                true
+        match self.quiet_until {
+            // Armed: fire on the leading edge and open the quiet window.
+            None => {
+                if changed {
+                    self.quiet_until = Some(now + self.debounce);
+                    self.trailing_reload_owed = false;
+                    return true;
+                }
+                false
             },
-            _ => false,
+            // Inside the quiet window: collapse changes, and slide the window so
+            // it only expires once the git directory has actually gone quiet.
+            Some(_) if changed => {
+                self.quiet_until = Some(now + self.debounce);
+                self.trailing_reload_owed = true;
+                false
+            },
+            Some(deadline) if now >= deadline => {
+                if self.trailing_reload_owed {
+                    // Pick up the settled end state, then hold the window open
+                    // once more so the trailing reload can't immediately re-arm
+                    // a leading one.
+                    self.trailing_reload_owed = false;
+                    self.quiet_until = Some(now + self.debounce);
+                    return true;
+                }
+                self.quiet_until = None;
+                false
+            },
+            Some(_) => false,
         }
     }
 
