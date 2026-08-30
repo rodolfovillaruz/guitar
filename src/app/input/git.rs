@@ -17,6 +17,7 @@ use crate::{
             tagging::untag,
         },
         auth::{AuthRequired, AuthSecret, NetworkResult},
+        os::repo::open_repo,
         queries::{commits::get_current_branch, remotes::effective_default_remote},
     },
     helpers::{
@@ -181,7 +182,7 @@ impl App {
             return;
         };
 
-        let repo = match Repository::open(path) {
+        let repo = match open_repo(path) {
             Ok(repo) => repo,
             Err(error) => {
                 self.focus = Focus::Viewport;
@@ -386,7 +387,7 @@ impl App {
         let Some(path) = self.repo.as_ref().map(|repo| repo.path().to_path_buf()) else {
             return;
         };
-        let mut repo = match Repository::open(path) {
+        let mut repo = match open_repo(path) {
             Ok(repo) => repo,
             Err(error) => {
                 self.show_error(errors::with_error(errors::OPEN_REPOSITORY(), error));
@@ -426,7 +427,7 @@ impl App {
         let Some(path) = self.repo.as_ref().map(|repo| repo.path().to_path_buf()) else {
             return;
         };
-        let mut repo = match Repository::open(path) {
+        let mut repo = match open_repo(path) {
             Ok(repo) => repo,
             Err(error) => {
                 self.show_error(errors::with_error(errors::OPEN_REPOSITORY(), error));
@@ -444,7 +445,7 @@ impl App {
             let Some(path) = self.repo.as_ref().map(|repo| repo.path().to_path_buf()) else {
                 return;
             };
-            let mut repo = match Repository::open(path) {
+            let mut repo = match open_repo(path) {
                 Ok(repo) => repo,
                 Err(error) => {
                     self.show_error(errors::with_error(errors::OPEN_REPOSITORY(), error));

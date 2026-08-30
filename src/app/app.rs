@@ -8,7 +8,10 @@ use crate::{
     },
     git::{
         auth::{AuthChallenge, AuthSession, NetworkResult},
-        os::path::try_into_git_repo_root,
+        os::{
+            path::try_into_git_repo_root,
+            repo::{git_env_active, open_repo},
+        },
         queries::{diffs::get_filenames_diff_at_oid, files::FileSearchResult, submodules::list_submodules, worktrees::list_worktrees},
     },
     helpers::{
@@ -921,10 +924,15 @@ impl App {
         let absolute_path: PathBuf = try_into_git_repo_root(&canonical_path).unwrap_or(canonical_path.clone());
 
         // Failure keeps the app usable by falling back to the splash screen.
-        let repo = match Repository::open(&absolute_path) {
+        // `open_repo` honors GIT_DIR / GIT_WORK_TREE when they are set in the environment.
+        let repo = match open_repo(&absolute_path) {
             Ok(r) => Some(Rc::new(r)),
             Err(_) => None,
         };
+
+        // When the environment redirects git elsewhere, trust the opened repository for the
+        // working path so downstream consumers (walker, network actions, title) stay consistent.
+        let absolute_path = repo.as_ref().filter(|_| git_env_active()).map(|repo| repo.workdir().unwrap_or_else(|| repo.path()).to_path_buf()).unwrap_or(absolute_path);
 
         let absolute_path = absolute_path.display().to_string();
         self.path = Some(absolute_path.clone());
