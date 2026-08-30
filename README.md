@@ -901,6 +901,15 @@ Submodule support is intentionally bounded:
 - Add, remove, edit-url, and recursive update flows are not implemented.
 - Commit and status file diffs stay file-oriented and do not recurse into submodule commit graphs.
 
+### Auto Reload
+
+`guitar` watches the open repository's git directory and reloads on its own when it changes, so commits, checkouts, fetches, rebases, or stashes performed in another terminal show up without pressing `r`.
+
+- The watcher polls `HEAD`, `index`, `packed-refs`, the in-progress operation heads (`MERGE_HEAD`, `CHERRY_PICK_HEAD`, and similar), and the `refs` and `logs` trees. The object database is never scanned, so cost stays flat on large repositories.
+- Changes are debounced by three seconds. A burst of writes, such as a fetch or an interactive rebase, settles into a single reload once the git directory goes quiet.
+- Auto reload is held back while a modal, a running Git or network operation, or the settings and splash views are in front, and applies once focus returns to an idle graph or viewer. It behaves exactly like the manual reload key, including graph selection restore.
+- Linked worktrees are covered through the repository's common directory.
+
 ## Authentication
 
 Network auth is used for fetch, selected-remote fetch from settings, push current branch, push tags, remote branch deletion, and submodule update/init.
@@ -1285,6 +1294,7 @@ Important source areas:
 
 - `src/main.rs`: CLI flags and app startup.
 - `src/app/app.rs`: main app state, event loop, draw orchestration, reload, graph worker sync.
+- `src/app/watcher.rs`: debounced git-directory poller that drives auto reload.
 - `src/app/input/`: keyboard, mouse, modal, navigation, Git, worktree, and submodule input handlers.
 - `src/app/draw/`: TUI drawing for graph, panes, viewer, settings, status, and modals.
 - `src/core/`: graph worker, walker, topology buffer, pane data, render helpers.
@@ -1297,7 +1307,7 @@ Graph internals are documented separately in [GRAPH.MD](GRAPH.MD), including lan
 
 ## Known Limitations
 
-- No filesystem watcher. Use reload when repository state changes outside the app.
+- The filesystem watcher is a polling watcher scoped to the git directory. Changes to working-tree files that do not touch the git directory (for example editing a file without staging it) are not auto-detected; use reload for those.
 - Current branch push is force push only.
 - No pull UI.
 - Conflict resolution editing is external.

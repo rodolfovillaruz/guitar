@@ -1,6 +1,8 @@
 #[allow(clippy::module_inception)]
 pub mod app;
 
+pub mod watcher;
+
 pub mod draw {
     pub mod branches;
     pub mod context_menu;

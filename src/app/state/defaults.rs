@@ -77,6 +77,7 @@ impl Default for App {
             graph_rx: None,
             walker_cancel: None,
             walker_handle: None,
+            git_watcher: None,
 
             // Walker data
             oids: Oids::default(),

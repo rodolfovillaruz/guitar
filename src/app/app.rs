@@ -1,5 +1,6 @@
 use crate::{
     app::input::TextInput,
+    app::watcher::GitWatcher,
     core::reflogs::HeadReflogs,
     core::stashes::Stashes,
     core::{
@@ -490,6 +491,9 @@ pub struct App {
     pub walker_cancel: Option<Arc<AtomicBool>>,
     pub walker_handle: Option<std::thread::JoinHandle<()>>,
 
+    // Debounced poller that auto-reloads when the git directory changes on disk.
+    pub git_watcher: Option<GitWatcher>,
+
     // Repository metadata consumed by graph, branch, tag, and stash panes.
     pub oids: Oids,
     pub branches: Branches,
@@ -686,6 +690,7 @@ impl App {
                     self.sync(repo);
                 }
                 self.poll_network_request();
+                self.poll_git_watcher();
 
                 terminal.draw(|frame| self.draw(frame))?;
                 self.run_pending_operation_action();
@@ -939,9 +944,19 @@ impl App {
         self.repo = repo;
         self.refresh_theme_assets();
 
+        // Rebuilt below once the repository is known; a failed open leaves it disabled.
+        self.git_watcher = None;
+
         // Repository-specific state starts only after Repository::open succeeds.
         if let Some(repo) = &self.repo {
             let current_path = PathBuf::from(&absolute_path);
+
+            // Watch the git directory so changes made outside the app (or by other
+            // tools) trigger the same reload as pressing the reload key. The watcher
+            // captures a fresh baseline on construction, so this reload is never
+            // mistaken for an external change.
+            self.git_watcher = Some(GitWatcher::new(repo.path().to_path_buf(), repo.commondir().to_path_buf()));
+
             self.worktrees = Worktrees::from_entries(list_worktrees(repo, Some(current_path.as_path())).unwrap_or_default());
             self.submodules = Submodules::from_entries(list_submodules(repo).unwrap_or_default());
 
@@ -1012,6 +1027,34 @@ impl App {
             );
 
             self.walker_handle = Some(handle);
+        }
+    }
+
+    // Auto-reload the repository when the git directory changes on disk, after a
+    // short debounce so a burst of writes (fetch, rebase, checkout from another
+    // terminal) settles into a single reload. Held back while a modal, a git or
+    // network operation, or a non-graph view is in front, so the refresh never
+    // yanks state out from under the user; the change is picked up once the app
+    // returns to an idle graph or viewer.
+    fn poll_git_watcher(&mut self) {
+        let is_idle = self.repo.is_some()
+            && matches!(self.viewport, Viewport::Graph | Viewport::Viewer)
+            && !self.is_modal_focus()
+            && self.context_menu.is_none()
+            && self.pending_network_request.is_none()
+            && self.network_handle.is_none()
+            && self.pending_operation_action.is_none();
+
+        if !is_idle {
+            return;
+        }
+
+        let Some(watcher) = &mut self.git_watcher else {
+            return;
+        };
+
+        if watcher.poll(Instant::now()) {
+            self.on_reload();
         }
     }
 
