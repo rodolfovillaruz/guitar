@@ -39,6 +39,7 @@ pub mod git {
     }
     pub mod os {
         pub mod path;
+        pub mod repo;
     }
     pub mod queries {
         pub mod commits;

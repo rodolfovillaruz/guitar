@@ -1,3 +1,4 @@
+use crate::git::os::repo::open_repo;
 use crate::git::queries::{commits::get_stashed_commits, reflogs::HeadReflogEntry};
 use crate::{
     core::{
@@ -52,8 +53,7 @@ pub struct Walker {
 impl Walker {
     // Open the repository and seed all metadata that does not depend on walking commits.
     pub fn new(path: String, amount: usize, hidden_branch_names: HashSet<String>, include_head_reflog_roots: bool, graph_lane_limit: usize) -> Result<Self, git2::Error> {
-        let path = path.clone();
-        let repo = Rc::new(RefCell::new(Repository::open(path).expect("Failed to open repo")));
+        let repo = Rc::new(RefCell::new(open_repo(&path)?));
 
         let buffer = RefCell::new(Buffer::with_lane_limit(graph_lane_limit));
 
