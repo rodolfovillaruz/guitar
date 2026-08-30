@@ -108,6 +108,16 @@ Important! Im not bothering myself with config migrations. So if you are trying 
 
 [https://github.com/asinglebit/guitar/releases](https://github.com/asinglebit/guitar/releases)
 
+Or install a prebuilt binary with [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall)
+(the `guitar` name on crates.io belongs to an unrelated crate, so install straight from this repo):
+
+```bash
+cargo binstall --git https://github.com/asinglebit/guitar guitar
+```
+
+This downloads the matching release binary for Linux (x86_64), macOS (Apple Silicon),
+or Windows (x86_64) instead of compiling from source.
+
 Build from source:
 
 ```bash
