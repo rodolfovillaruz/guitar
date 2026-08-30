@@ -53,6 +53,7 @@ pub enum Command {
     ToggleInspector,
     ToggleShas,
     ToggleHelp,
+    OpenContextMenu,
     ActionMode,
     Exit,
     RemoveRecentRepository,
@@ -195,6 +196,7 @@ pub fn command_to_visual_string(command: &Command) -> String {
         Command::ToggleInspector => "Toggle inspector",
         Command::ToggleShas => "Toggle SHAs",
         Command::ToggleHelp => "Toggle help",
+        Command::OpenContextMenu => "Open context menu",
         Command::ActionMode => "Action mode",
         Command::Exit => "Exit",
         Command::RemoveRecentRepository => "Remove recent repository",
@@ -430,6 +432,9 @@ fn default_navigation_keymap() -> IndexMap<KeyBinding, Command> {
 
     // [Esc] = back
     map.insert(KeyBinding::new(Esc, KeyModifiers::NONE), Command::Back);
+
+    // 'a' = open the context menu for the current selection (keyboard equivalent of a right click)
+    map.insert(KeyBinding::new(Char('a'), KeyModifiers::NONE), Command::OpenContextMenu);
 
     // Navigating between adjacent hierarchy layers (panes)
     // Think of this as moving between sibling views rather than parent / child
@@ -831,6 +836,7 @@ fn insert_default_binding_if_available(map: &mut ModeKeymap, key: KeyBinding, co
 fn ensure_default_keymap_bindings(maps: &mut Keymaps) -> bool {
     let mut changed = false;
     let shared_defaults = [
+        (KeyBinding::new(Char('a'), KeyModifiers::NONE), Command::OpenContextMenu),
         (KeyBinding::new(Char('F'), KeyModifiers::SHIFT), Command::FindFile),
         (KeyBinding::new(Char('4'), KeyModifiers::NONE), Command::ToggleReflogs),
         (KeyBinding::new(Char('5'), KeyModifiers::NONE), Command::ToggleWorktrees),

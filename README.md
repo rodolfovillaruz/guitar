@@ -397,6 +397,7 @@ Mouse capture is enabled while the app runs.
 - Mouse wheel scrolls the pane under the cursor and focuses it.
 - Click or drag a visible scrollbar track to jump or scrub the pane it belongs to.
 - A single click selects the row under the cursor and focuses that pane.
+- Right-click opens a context menu of actions for the row under the cursor. `a` opens the same menu for the current selection when a right click is not available (for example in Termux); navigate it with `j`/`k`, activate with `Enter`, dismiss with `Esc`.
 - Double-click branch, tag, stash, reflog, worktree, submodule, status, theme, or keybinding rows to perform the same action as `Enter`.
 - Single-click settings layout rows to toggle them immediately.
 - Graph, viewer, and splash rows are selected by mouse clicks but not activated by double-click.
@@ -475,6 +476,7 @@ Defaults are written to `keymap.json` on first run. User-edited keymaps can diff
 | Narrow Scope | `l`, `Right` |
 | Select | `Enter` |
 | Back | `Esc` |
+| Open Context Menu | `a` |
 | Focus Previous Pane | `Ctrl+p`, `Shift+BackTab` |
 | Focus Next Pane | `Ctrl+n`, `Tab` |
 | Focus Pane Left | `Ctrl+h`, `Ctrl+Left` |
