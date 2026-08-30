@@ -6,7 +6,7 @@ authors = ["rattleworks <gasimov.abdulali@gmail.com>"]
 edition = "2024"
 default-run = "guitar"
 homepage = "https://github.com/asinglebit/guitar/"
-repository = "https://github.com/asinglebit/guitar/"
+repository = "https://github.com/rodolfovillaruz/guitar/"
 readme = "README.md"
 license = "GPL-3.0-only"
 
