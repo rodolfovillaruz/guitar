@@ -397,7 +397,8 @@ Mouse capture is enabled while the app runs.
 - Mouse wheel scrolls the pane under the cursor and focuses it.
 - Click or drag a visible scrollbar track to jump or scrub the pane it belongs to.
 - A single click selects the row under the cursor and focuses that pane.
-- Double-click branch, tag, stash, reflog, worktree, submodule, status, theme, or keybinding rows to perform the same action as `Enter`.
+- Double-click tag, stash, reflog, worktree, submodule, status, theme, or keybinding rows to perform the same action as `Enter`.
+- Double-click a branch row to check that branch out, matching the "Checkout branch" context-menu action.
 - Single-click settings layout rows to toggle them immediately.
 - Graph, viewer, and splash rows are selected by mouse clicks but not activated by double-click.
 - Drag the left and right vertical dividers to resize side panes.

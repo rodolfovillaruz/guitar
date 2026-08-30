@@ -193,7 +193,7 @@ impl App {
         } else if is_double_click {
             self.last_mouse_click = None;
             if Self::mouse_target_activates_on_double_click(target) {
-                self.on_select();
+                self.activate_mouse_double_click(target);
             }
         } else {
             self.last_mouse_click = Some((target, now));
@@ -267,6 +267,15 @@ impl App {
                 | MouseSelectionTarget::StatusBottom(_)
                 | MouseSelectionTarget::Settings(_)
         )
+    }
+
+    fn activate_mouse_double_click(&mut self, target: MouseSelectionTarget) {
+        match target {
+            // Double-clicking a branch row checks the branch out, matching the
+            // "Checkout branch" context-menu action rather than merely opening the commit.
+            MouseSelectionTarget::Branches(_) => self.on_checkout(),
+            _ => self.on_select(),
+        }
     }
 
     pub(crate) fn select_mouse_target(&mut self, target: MouseSelectionTarget) {

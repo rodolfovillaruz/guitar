@@ -62,10 +62,6 @@ harness = false
 name = "submodule_queries"
 harness = false
 
-[[bench]]
-name = "startup"
-harness = false
-
 # Enable more optimization in the release profile at the cost of compile time.
 [profile.release]
 # Compile the entire crate as one unit.

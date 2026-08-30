@@ -832,11 +832,20 @@ fn double_click_on_settings_recent_repository_row_is_selection_only() {
     assert!(app.repo.is_none());
 }
 
-#[test]
-fn double_click_on_branch_row_acts_like_enter() {
-    let (_path, repo) = temp_repo("branch-double");
-    let mut app = graph_app();
+fn branch_row_repo(name: &str) -> (PathBuf, Repository, Oid) {
+    let (path, repo) = temp_repo(name);
+    commit_file(&repo, "base.txt", "base");
     let oid = commit_file(&repo, "feature.txt", "feature");
+    // HEAD stays on the initial branch; "feature" is a separate ref to switch onto.
+    repo.branch("feature", &repo.find_commit(oid).unwrap(), false).unwrap();
+    (path, repo, oid)
+}
+
+#[test]
+fn double_click_on_branch_row_checks_out_branch() {
+    let (path, repo, oid) = branch_row_repo("branch-double");
+    let mut app = graph_app();
+    app.path = Some(path.display().to_string());
     app.repo = Some(Rc::new(repo));
     app.layout_config.is_branches = true;
     app.layout.branches = Rect::new(0, 0, 20, 6);
@@ -847,15 +856,14 @@ fn double_click_on_branch_row_acts_like_enter() {
     app.handle_mouse_event(left_down(1, 0));
     app.handle_mouse_event(left_down(1, 0));
 
-    assert_eq!(app.focus, Focus::Viewport);
-    assert_eq!(app.graph_selected, 1);
+    assert_eq!(app.repo.as_ref().unwrap().head().unwrap().shorthand(), Some("feature"));
 }
 
 #[test]
-fn viewer_mode_double_click_on_branch_row_acts_like_enter() {
-    let (_path, repo) = temp_repo("viewer-branch-double");
+fn viewer_mode_double_click_on_branch_row_checks_out_branch() {
+    let (path, repo, oid) = branch_row_repo("viewer-branch-double");
     let mut app = graph_app();
-    let oid = commit_file(&repo, "feature.txt", "feature");
+    app.path = Some(path.display().to_string());
     app.repo = Some(Rc::new(repo));
     app.viewport = Viewport::Viewer;
     app.layout_config.is_branches = true;
@@ -867,9 +875,7 @@ fn viewer_mode_double_click_on_branch_row_acts_like_enter() {
     app.handle_mouse_event(left_down(1, 0));
     app.handle_mouse_event(left_down(1, 0));
 
-    assert_eq!(app.focus, Focus::Viewport);
-    assert_eq!(app.viewport, Viewport::Graph);
-    assert_eq!(app.graph_selected, 1);
+    assert_eq!(app.repo.as_ref().unwrap().head().unwrap().shorthand(), Some("feature"));
 }
 
 #[test]
