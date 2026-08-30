@@ -149,6 +149,34 @@ fn defaults_include_file_search_binding() {
 }
 
 #[test]
+fn defaults_include_open_context_menu_binding_in_both_modes() {
+    let maps = default_keymaps();
+
+    for mode in [InputMode::Normal, InputMode::Action] {
+        let mode_map = maps.get(&mode).unwrap();
+        assert_eq!(mode_map.get(&KeyBinding::new(Char('a'), KeyModifiers::NONE)), Some(&Command::OpenContextMenu));
+    }
+}
+
+#[test]
+fn existing_keymaps_gain_open_context_menu_only_when_key_is_free() {
+    let mut maps = IndexMap::new();
+    let mut normal = IndexMap::new();
+    normal.insert(KeyBinding::new(Char('j'), KeyModifiers::NONE), Command::ScrollDown);
+    let mut action = IndexMap::new();
+    action.insert(KeyBinding::new(Char('a'), KeyModifiers::NONE), Command::Stage);
+    maps.insert(InputMode::Normal, normal);
+    maps.insert(InputMode::Action, action);
+
+    assert!(ensure_default_keymap_bindings(&mut maps));
+
+    assert_eq!(maps.get(&InputMode::Normal).unwrap().get(&KeyBinding::new(Char('a'), KeyModifiers::NONE)), Some(&Command::OpenContextMenu));
+    // The user already mapped 'a' in action mode, so it is left untouched.
+    assert_eq!(maps.get(&InputMode::Action).unwrap().get(&KeyBinding::new(Char('a'), KeyModifiers::NONE)), Some(&Command::Stage));
+    assert!(!maps.get(&InputMode::Action).unwrap().values().any(|command| command == &Command::OpenContextMenu));
+}
+
+#[test]
 fn existing_keymaps_gain_search_toggle_when_available() {
     let mut maps = IndexMap::new();
     let mut normal = IndexMap::new();

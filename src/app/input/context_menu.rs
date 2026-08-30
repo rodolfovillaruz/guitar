@@ -42,6 +42,63 @@ impl App {
         self.context_menu = None;
     }
 
+    /// Keyboard equivalent of a right click: open the context menu for whatever is currently
+    /// selected in the focused pane. Anchors the menu near that pane so it lands in a sensible
+    /// spot on terminals without mouse support (e.g. Termux).
+    pub(crate) fn on_open_context_menu(&mut self) {
+        if self.is_modal_focus() || self.context_menu.is_some() {
+            return;
+        }
+
+        self.mouse_drag = None;
+        self.last_mouse_click = None;
+
+        let (target, (column, row)) = self.keyboard_context_menu_anchor();
+        if let Some(target) = target {
+            self.select_mouse_target(target);
+        }
+
+        let items = self.context_menu_items_for_target(target);
+        if items.is_empty() {
+            self.context_menu = None;
+            return;
+        }
+
+        self.context_menu = Some(ContextMenuState { column, row, selected: Self::first_enabled_context_menu_index(&items), items });
+    }
+
+    fn keyboard_context_menu_anchor(&self) -> (Option<MouseSelectionTarget>, (u16, u16)) {
+        let anchor = |rect: Rect| (rect.x.saturating_add(1), rect.y.saturating_add(1));
+
+        match self.viewport {
+            Viewport::Splash => {
+                let target = (!self.recent.is_empty()).then_some(MouseSelectionTarget::Splash(self.splash_selected));
+                return (target, anchor(self.layout.app));
+            },
+            Viewport::Settings => {
+                let target = self.settings_selections.iter().any(|selection| selection.line == self.settings_selected).then_some(MouseSelectionTarget::Settings(self.settings_selected));
+                return (target, anchor(self.layout.app));
+            },
+            Viewport::Graph | Viewport::Viewer => {},
+        }
+
+        match self.focus {
+            Focus::Branches => (Some(MouseSelectionTarget::Branches(self.branches_selected)), anchor(self.layout.pane_branches)),
+            Focus::Tags => (Some(MouseSelectionTarget::Tags(self.tags_selected)), anchor(self.layout.pane_tags)),
+            Focus::Stashes => (Some(MouseSelectionTarget::Stashes(self.stashes_selected)), anchor(self.layout.pane_stashes)),
+            Focus::Reflogs => (Some(MouseSelectionTarget::Reflogs(self.reflogs_selected)), anchor(self.layout.pane_reflogs)),
+            Focus::Worktrees => (Some(MouseSelectionTarget::Worktrees(self.worktrees_selected)), anchor(self.layout.pane_worktrees)),
+            Focus::Submodules => (Some(MouseSelectionTarget::Submodules(self.submodules_selected)), anchor(self.layout.pane_submodules)),
+            Focus::Search => (Some(MouseSelectionTarget::Search(self.search_selected)), anchor(self.layout.pane_search)),
+            Focus::Inspector => (Some(MouseSelectionTarget::Inspector(self.inspector_selected)), anchor(self.layout.pane_inspector)),
+            Focus::StatusTop => (Some(MouseSelectionTarget::StatusTop(self.status_top_selected)), anchor(self.layout.pane_status_top)),
+            Focus::StatusBottom => (Some(MouseSelectionTarget::StatusBottom(self.status_bottom_selected)), anchor(self.layout.pane_status_bottom)),
+            Focus::Viewport if self.viewport == Viewport::Viewer => (Some(MouseSelectionTarget::Viewer(self.viewer_selected)), anchor(self.layout.graph)),
+            Focus::Viewport => (Some(MouseSelectionTarget::Graph(self.graph_selected)), anchor(self.layout.graph)),
+            _ => (None, anchor(self.layout.app)),
+        }
+    }
+
     pub(crate) fn handle_context_menu_key_event(&mut self, key_event: KeyEvent) -> bool {
         if self.context_menu.is_none() || self.is_modal_focus() {
             return false;

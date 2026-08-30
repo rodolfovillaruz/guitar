@@ -226,6 +226,58 @@ fn context_menu_keyboard_navigation_and_enter_activate_selected_item() {
 }
 
 #[test]
+fn keyboard_trigger_opens_context_menu_for_selected_graph_commit() {
+    let mut app = graph_app();
+    app.graph_selected = 5;
+
+    app.on_open_context_menu();
+
+    let menu = app.context_menu.as_ref().expect("keyboard trigger opens the context menu");
+    assert_eq!((menu.column, menu.row), (1, 1));
+    let labels = context_menu_labels(&app);
+    assert!(labels.iter().any(|label| label == "Create branch"), "{labels:?}");
+    assert!(labels.iter().any(|label| label == "Checkout"), "{labels:?}");
+}
+
+#[test]
+fn keyboard_trigger_uses_focused_side_pane_selection() {
+    let mut app = graph_app();
+    app.layout_config.is_branches = true;
+    app.layout.pane_branches = Rect::new(0, 0, 20, 6);
+    app.focus = Focus::Branches;
+    app.branches.sorted = (0..10).map(|idx| (idx, format!("branch-{idx}"))).collect();
+    app.branches_selected = 4;
+
+    app.on_open_context_menu();
+
+    assert!(app.context_menu.is_some());
+    let labels = context_menu_labels(&app);
+    assert!(labels.iter().any(|label| label == "Open commit"), "{labels:?}");
+    assert!(labels.iter().any(|label| label == "Checkout branch"), "{labels:?}");
+}
+
+#[test]
+fn keyboard_trigger_does_not_open_context_menu_over_modal_focus() {
+    let mut app = context_menu_app();
+    app.focus = Focus::ModalCommit;
+
+    app.on_open_context_menu();
+
+    assert!(app.context_menu.is_none());
+}
+
+#[test]
+fn keyboard_trigger_is_ignored_when_context_menu_already_open() {
+    let mut app = graph_app();
+    app.handle_mouse_event(right_down(1, 3));
+    let opened = app.context_menu.clone();
+
+    app.on_open_context_menu();
+
+    assert_eq!(app.context_menu, opened);
+}
+
+#[test]
 fn right_click_selects_graph_row_and_opens_contextual_actions() {
     let mut app = graph_app();
     app.graph_scroll.set(2);
