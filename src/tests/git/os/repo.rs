@@ -1,5 +1,5 @@
 use super::{git_env_active, open_repo};
-use git2::{Repository, Signature};
+use git2::{Repository, Signature, StatusOptions};
 use std::{
     ffi::OsString,
     fs,
@@ -108,6 +108,60 @@ fn open_repo_honors_git_dir_and_work_tree_env() {
     let opened = open_repo(&elsewhere).unwrap();
     assert_eq!(canonical(opened.path()), canonical(&git_dir));
     assert_eq!(canonical(opened.workdir().unwrap()), canonical(&work));
+}
+
+#[test]
+fn open_repo_attaches_work_tree_when_git_dir_is_bare() {
+    let _guard = ENV_GUARD.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let dir = TestDir::new("bare-env");
+    let git_dir = dir.path.join("dot.git");
+    let work = dir.path.join("tree");
+    fs::create_dir_all(&work).unwrap();
+
+    // A bare git directory plus a detached work tree: the classic dotfiles layout, and the
+    // case where libgit2's `open_from_env` silently drops GIT_WORK_TREE.
+    Repository::init_bare(&git_dir).unwrap();
+    fs::write(work.join("file.txt"), "contents").unwrap();
+
+    let _env = ScopedEnv::set(&[("GIT_DIR", git_dir.as_path()), ("GIT_WORK_TREE", work.as_path())]);
+    assert!(git_env_active());
+
+    let opened = open_repo(&work).unwrap();
+    assert!(!opened.is_bare());
+    assert_eq!(canonical(opened.path()), canonical(&git_dir));
+    assert_eq!(canonical(opened.workdir().unwrap()), canonical(&work));
+
+    // The status query that raised "cannot status ... BareRepo" must now succeed.
+    let mut options = StatusOptions::new();
+    options.include_untracked(true);
+    let statuses = opened.statuses(Some(&mut options)).unwrap();
+    assert!(statuses.iter().any(|entry| entry.path() == Some("file.txt")));
+}
+
+#[test]
+fn open_repo_prefers_an_explicit_repository_path_over_git_dir() {
+    let _guard = ENV_GUARD.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let dir = TestDir::new("path-over-env");
+
+    let target = dir.path.join("target");
+    fs::create_dir_all(&target).unwrap();
+    init_repo_with_commit(&target);
+
+    // An unrelated repository the environment happens to point at.
+    let other = dir.path.join("other");
+    fs::create_dir_all(&other).unwrap();
+    init_repo_with_commit(&other);
+
+    let _env = ScopedEnv::set(&[("GIT_DIR", other.join(".git").as_path()), ("GIT_WORK_TREE", other.as_path())]);
+    assert!(git_env_active());
+
+    // `target` is a repository in its own right, so it wins over the inherited GIT_DIR.
+    let opened = open_repo(&target).unwrap();
+    assert_eq!(canonical(opened.workdir().unwrap()), canonical(&target));
+
+    // The same holds when the caller passes the git directory rather than the work tree.
+    let opened = open_repo(target.join(".git")).unwrap();
+    assert_eq!(canonical(opened.workdir().unwrap()), canonical(&target));
 }
 
 #[test]
