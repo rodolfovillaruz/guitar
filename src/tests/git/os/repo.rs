@@ -135,7 +135,7 @@ fn open_repo_attaches_work_tree_when_git_dir_is_bare() {
     let mut options = StatusOptions::new();
     options.include_untracked(true);
     let statuses = opened.statuses(Some(&mut options)).unwrap();
-    assert!(statuses.iter().any(|entry| entry.path() == Some("file.txt")));
+    assert!(statuses.iter().any(|entry| entry.path().ok() == Some("file.txt")));
 }
 
 #[test]
