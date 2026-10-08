@@ -21,7 +21,7 @@ fn temp_repo(name: &str) -> (std::path::PathBuf, Repository) {
     let id = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let path = std::env::temp_dir().join(format!("guitar-input-git-{name}-{id}"));
     fs::create_dir_all(&path).unwrap();
-    let repo = Repository::init(&path).unwrap();
+    let repo = Repository::init_opts(&path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     {
         let mut config = repo.config().unwrap();
         config.set_str("user.name", "Test User").unwrap();
@@ -33,7 +33,7 @@ fn temp_repo(name: &str) -> (std::path::PathBuf, Repository) {
 fn add_local_bare_remote(repo: &Repository, name: &str) -> PathBuf {
     let id = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let path = std::env::temp_dir().join(format!("guitar-input-git-remote-{name}-{id}"));
-    Repository::init_bare(&path).unwrap();
+    Repository::init_opts(&path, git2::RepositoryInitOptions::new().bare(true).initial_head("master")).unwrap();
     repo.remote(name, path.to_str().unwrap()).unwrap();
     path
 }

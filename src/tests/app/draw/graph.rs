@@ -24,7 +24,7 @@ fn temp_repo(name: &str) -> (PathBuf, Repository, Oid) {
     let id = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let path = std::env::temp_dir().join(format!("guitar-graph-draw-{name}-{id}"));
     fs::create_dir_all(&path).unwrap();
-    let repo = Repository::init(&path).unwrap();
+    let repo = Repository::init_opts(&path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     fs::write(path.join("file.txt"), "content\n").unwrap();
 
     let mut index = repo.index().unwrap();
@@ -42,7 +42,7 @@ fn temp_unborn_repo(name: &str) -> (PathBuf, Repository) {
     let id = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let path = std::env::temp_dir().join(format!("guitar-graph-draw-{name}-{id}"));
     fs::create_dir_all(&path).unwrap();
-    let repo = Repository::init(&path).unwrap();
+    let repo = Repository::init_opts(&path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     (path, repo)
 }
 

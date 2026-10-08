@@ -58,7 +58,7 @@ impl Drop for TestDir {
 
 fn init_repo(path: &Path) -> Repository {
     fs::create_dir_all(path).unwrap();
-    let repo = Repository::init(path).unwrap();
+    let repo = Repository::init_opts(path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     {
         let mut config = repo.config().unwrap();
         config.set_str("user.name", "Test User").unwrap();

@@ -34,7 +34,7 @@ impl Drop for TestDir {
 
 fn temp_repo(name: &str) -> (TestDir, Repository) {
     let dir = TestDir::new(name);
-    let repo = Repository::init(&dir.path).unwrap();
+    let repo = Repository::init_opts(&dir.path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     {
         let mut config = repo.config().unwrap();
         config.set_str("user.name", "Test User").unwrap();

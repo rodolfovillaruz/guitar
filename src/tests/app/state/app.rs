@@ -35,7 +35,7 @@ fn temp_repo(name: &str) -> (PathBuf, Repository) {
     let id = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let path = std::env::temp_dir().join(format!("guitar-app-state-{name}-{id}"));
     fs::create_dir_all(&path).unwrap();
-    let repo = Repository::init(&path).unwrap();
+    let repo = Repository::init_opts(&path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     {
         let mut config = repo.config().unwrap();
         config.set_str("user.name", "Test User").unwrap();
@@ -66,7 +66,7 @@ fn commit_index(repo: &Repository, message: &str) -> git2::Oid {
 
 fn init_repo_at(path: &Path) -> Repository {
     fs::create_dir_all(path).unwrap();
-    let repo = Repository::init(path).unwrap();
+    let repo = Repository::init_opts(path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     {
         let mut config = repo.config().unwrap();
         config.set_str("user.name", "Test User").unwrap();

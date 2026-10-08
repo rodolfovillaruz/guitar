@@ -28,7 +28,7 @@ impl Drop for TestDir {
 }
 
 fn init_repo(path: &Path) -> Repository {
-    let repo = Repository::init(path).unwrap();
+    let repo = Repository::init_opts(path, git2::RepositoryInitOptions::new().initial_head("master")).unwrap();
     fs::write(path.join("file.txt"), "hello\n").unwrap();
     let mut index = repo.index().unwrap();
     index.add_path(Path::new("file.txt")).unwrap();
