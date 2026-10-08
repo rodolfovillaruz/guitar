@@ -64,6 +64,7 @@ fn render_graph_projection_uncommitted_row(bencher: Bencher) {
         summary: "uncommitted".to_string(),
         committer_date: String::new(),
         committer_name: String::new(),
+        is_merge: false,
         has_any_branch: false,
         branches: Vec::new(),
         tags: Vec::new(),

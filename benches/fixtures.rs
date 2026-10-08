@@ -94,7 +94,7 @@ pub fn commit_file(repo: &Repository, file: &str, contents: &str, message: &str)
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum BufferOp {
     Update(Chunk),
     Merger(u32),
@@ -190,7 +190,7 @@ pub fn buffer_linear_fixture(commits: usize) -> BufferFixture {
 
     for alias in 1..=commits as u32 {
         let chunk = Chunk::commit(alias, parent, NONE);
-        ops.push(BufferOp::Update(chunk));
+        ops.push(BufferOp::Update(chunk.clone()));
         buffer.update(chunk);
         parent = alias;
     }
@@ -208,7 +208,7 @@ pub fn buffer_merge_fixture(rounds: usize) -> BufferFixture {
     let root = next_alias;
     next_alias += 1;
     let root_chunk = Chunk::commit(root, NONE, NONE);
-    ops.push(BufferOp::Update(root_chunk));
+    ops.push(BufferOp::Update(root_chunk.clone()));
     buffer.update(root_chunk);
     let mut parent = root;
 
@@ -216,19 +216,19 @@ pub fn buffer_merge_fixture(rounds: usize) -> BufferFixture {
         let left = next_alias;
         next_alias += 1;
         let left_chunk = Chunk::commit(left, parent, NONE);
-        ops.push(BufferOp::Update(left_chunk));
+        ops.push(BufferOp::Update(left_chunk.clone()));
         buffer.update(left_chunk);
 
         let right = next_alias;
         next_alias += 1;
         let right_chunk = Chunk::commit(right, parent, NONE);
-        ops.push(BufferOp::Update(right_chunk));
+        ops.push(BufferOp::Update(right_chunk.clone()));
         buffer.update(right_chunk);
 
         let merge = next_alias;
         next_alias += 1;
         let merge_chunk = Chunk::commit(merge, left, right);
-        ops.push(BufferOp::Update(merge_chunk));
+        ops.push(BufferOp::Update(merge_chunk.clone()));
         buffer.update(merge_chunk);
 
         ops.push(BufferOp::Merger(merge));
@@ -237,7 +237,7 @@ pub fn buffer_merge_fixture(rounds: usize) -> BufferFixture {
         let replay = next_alias;
         next_alias += 1;
         let replay_chunk = Chunk::commit(replay, merge, NONE);
-        ops.push(BufferOp::Update(replay_chunk));
+        ops.push(BufferOp::Update(replay_chunk.clone()));
         buffer.update(replay_chunk);
 
         parent = replay;
@@ -443,7 +443,7 @@ pub fn apply_buffer_ops(ops: &[BufferOp]) -> Buffer {
     for op in ops {
         match op {
             BufferOp::Update(chunk) => {
-                buffer.update(*chunk);
+                buffer.update(chunk.clone());
             },
             BufferOp::Merger(alias) => buffer.merger(*alias),
         }
@@ -463,6 +463,7 @@ fn push_commit(buffer: &mut Buffer, rows: &mut Vec<GraphRow>, index: usize, alia
         summary,
         committer_date: "2026-06-20 12:34".to_string(),
         committer_name: "Benchmark Runner".to_string(),
+        is_merge: parent_b != NONE,
         has_any_branch: false,
         branches: Vec::new(),
         tags: Vec::new(),
