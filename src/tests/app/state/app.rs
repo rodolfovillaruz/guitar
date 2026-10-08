@@ -395,7 +395,7 @@ fn watcher_temp_dir(name: &str) -> PathBuf {
 }
 
 #[test]
-fn file_watcher_events_owe_a_reload_once_the_burst_settles() {
+fn file_watcher_events_owe_a_reload() {
     let root = watcher_temp_dir("owed-reload");
     let mut app = App { layout_config: LayoutConfig { is_file_watcher: true, ..Default::default() }, ..Default::default() };
     app.path = Some(root.to_str().unwrap().to_string());
@@ -417,6 +417,77 @@ fn file_watcher_events_owe_a_reload_once_the_burst_settles() {
     let owed = app.pending_reload;
     fs::remove_dir_all(&root).ok();
     assert!(owed, "a working tree change should leave a reload owed");
+}
+
+#[test]
+fn watcher_debounce_owes_a_reload_on_the_first_event() {
+    let mut app = App::default();
+    let t0 = Instant::now();
+
+    app.advance_watcher_debounce(false, t0);
+    assert!(!app.pending_reload, "no events, no reload");
+
+    app.advance_watcher_debounce(true, t0);
+    assert!(app.pending_reload, "the first event should owe a reload without waiting out the window");
+}
+
+#[test]
+fn watcher_debounce_collapses_a_burst_into_one_trailing_reload() {
+    let mut app = App::default();
+    let t0 = Instant::now();
+    let step = WATCHER_QUIET_PERIOD / 4;
+
+    app.advance_watcher_debounce(true, t0);
+    app.pending_reload = false;
+
+    // The rest of the burst slides the window instead of reloading again.
+    for i in 1..=6 {
+        app.advance_watcher_debounce(true, t0 + step * i);
+        assert!(!app.pending_reload, "events inside the window must not reload mid-burst");
+    }
+    let last_event = t0 + step * 6;
+
+    app.advance_watcher_debounce(false, last_event + WATCHER_QUIET_PERIOD - step);
+    assert!(!app.pending_reload, "the trailing reload waits for the full quiet period");
+
+    app.advance_watcher_debounce(false, last_event + WATCHER_QUIET_PERIOD);
+    assert!(app.pending_reload, "the settled end state of the burst should be reloaded once");
+}
+
+#[test]
+fn watcher_debounce_skips_the_trailing_reload_for_a_single_event() {
+    let mut app = App::default();
+    let t0 = Instant::now();
+
+    app.advance_watcher_debounce(true, t0);
+    app.pending_reload = false;
+
+    app.advance_watcher_debounce(false, t0 + WATCHER_QUIET_PERIOD);
+    assert!(!app.pending_reload, "nothing changed after the leading reload, so nothing more is owed");
+
+    // The window has closed, so the next event is a fresh leading edge.
+    app.advance_watcher_debounce(true, t0 + WATCHER_QUIET_PERIOD * 2);
+    assert!(app.pending_reload);
+}
+
+#[test]
+fn watcher_debounce_owes_at_most_one_reload_per_window() {
+    let mut app = App::default();
+    let t0 = Instant::now();
+
+    app.advance_watcher_debounce(true, t0);
+    app.advance_watcher_debounce(true, t0 + WATCHER_QUIET_PERIOD / 2);
+    app.pending_reload = false;
+
+    let trailing = t0 + WATCHER_QUIET_PERIOD / 2 + WATCHER_QUIET_PERIOD;
+    app.advance_watcher_debounce(false, trailing);
+    assert!(app.pending_reload, "trailing reload");
+    app.pending_reload = false;
+
+    // An event right after the trailing reload is collapsed into the held-open window rather than
+    // firing a second reload back to back.
+    app.advance_watcher_debounce(true, trailing + WATCHER_QUIET_PERIOD / 4);
+    assert!(!app.pending_reload, "a trailing reload must not immediately re-arm a leading one");
 }
 
 #[test]

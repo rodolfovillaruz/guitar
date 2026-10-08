@@ -685,8 +685,12 @@ pub struct App {
 
     // Background file watcher. Opt-in, and never steals focus.
     pub file_watcher: Option<RepoWatcher>,
-    // Watcher debounce, reset by every filesystem event so one Git command means one reload.
-    pub watcher_quiet_since: Option<Instant>,
+    // End of the watcher's quiet window. None means armed: the next event owes a reload right away.
+    // Some means a reload already fired and further events are collapsed until this instant passes
+    // with the repository quiet.
+    pub watcher_quiet_until: Option<Instant>,
+    // An event arrived inside the quiet window, so one trailing reload is owed once it expires.
+    pub watcher_trailing_reload: bool,
     // When guitar started, which is what the splash wordmark is animated from.
     pub started: Instant,
     // A reload is owed. Kept separate from the debounce above so a burst of events cannot postpone
@@ -702,8 +706,9 @@ pub struct App {
 }
 
 // A single git command emits a burst of filesystem events, and reload() rewalks the whole graph, so
-// events are coalesced until the repository has been quiet for this long.
-const WATCHER_QUIET_PERIOD: Duration = Duration::from_millis(300);
+// after the first event reloads, the rest of the burst is coalesced until the repository has been
+// quiet for this long.
+pub(crate) const WATCHER_QUIET_PERIOD: Duration = Duration::from_millis(300);
 
 impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -1097,14 +1102,16 @@ impl App {
         let Some(path) = path else {
             // Dropping the watcher releases its OS watches.
             self.file_watcher = None;
-            self.watcher_quiet_since = None;
+            self.watcher_quiet_until = None;
+            self.watcher_trailing_reload = false;
             return;
         };
         if self.file_watcher.as_ref().is_some_and(|watcher| watcher.path == path) {
             return;
         }
         self.file_watcher = spawn_repo_watcher(&path);
-        self.watcher_quiet_since = None;
+        self.watcher_quiet_until = None;
+        self.watcher_trailing_reload = false;
     }
 
     // Reloading under a modal would tear down whatever the user is in the middle of, so background
@@ -1134,7 +1141,7 @@ impl App {
         self.repo.as_ref().and_then(|repo| get_git_user_info(repo).ok()).is_some_and(|(name, email)| name.is_some() && email.is_some())
     }
 
-    // Drain the watcher channel and mark a reload owed once the burst has settled.
+    // Drain the watcher channel and feed the result to the debounce.
     pub fn poll_file_watcher(&mut self) {
         let mut saw_event = false;
         if let Some(watcher) = &self.file_watcher {
@@ -1142,12 +1149,38 @@ impl App {
                 saw_event = true;
             }
         }
-        if saw_event {
-            self.watcher_quiet_since = Some(Instant::now());
-        }
-        if self.watcher_quiet_since.is_some_and(|since| since.elapsed() >= WATCHER_QUIET_PERIOD) {
-            self.watcher_quiet_since = None;
-            self.pending_reload = true;
+        self.advance_watcher_debounce(saw_event, Instant::now());
+    }
+
+    // Leading-edge debounce: the first event of a burst owes a reload at once, so changes show up
+    // promptly. That opens a quiet window; events inside it slide the window and are collapsed into
+    // one trailing reload once the repository goes quiet, so the settled end state of a fetch or
+    // rebase is picked up too. At most one reload is owed per window.
+    pub(crate) fn advance_watcher_debounce(&mut self, saw_event: bool, now: Instant) {
+        match self.watcher_quiet_until {
+            None => {
+                if saw_event {
+                    self.pending_reload = true;
+                    self.watcher_quiet_until = Some(now + WATCHER_QUIET_PERIOD);
+                    self.watcher_trailing_reload = false;
+                }
+            },
+            Some(_) if saw_event => {
+                self.watcher_quiet_until = Some(now + WATCHER_QUIET_PERIOD);
+                self.watcher_trailing_reload = true;
+            },
+            Some(deadline) if now >= deadline => {
+                if self.watcher_trailing_reload {
+                    // Hold the window open once more so the trailing reload cannot immediately
+                    // re-arm a leading one.
+                    self.pending_reload = true;
+                    self.watcher_trailing_reload = false;
+                    self.watcher_quiet_until = Some(now + WATCHER_QUIET_PERIOD);
+                } else {
+                    self.watcher_quiet_until = None;
+                }
+            },
+            Some(_) => {},
         }
     }
 

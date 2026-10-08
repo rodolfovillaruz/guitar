@@ -240,7 +240,8 @@ impl Default for App {
             // Background file watcher. run() spawns it through reload() once the saved layout has
             // been read.
             file_watcher: None,
-            watcher_quiet_since: None,
+            watcher_quiet_until: None,
+            watcher_trailing_reload: false,
             started: Instant::now(),
             pending_reload: false,
 

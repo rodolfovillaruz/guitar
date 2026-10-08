@@ -976,7 +976,7 @@ Normal key: `Shift+W`.
 The file watcher reloads the repository for you whenever something changes on disk, which is the same thing `r` does. It notices commits, checkouts, branch and tag changes, rebases, merges and staging performed in another terminal, as well as ordinary edits saved from an editor.
 
 - It watches `.git`, `.git/refs`, and the working tree. `.git/objects`, `.git/logs`, `target`, and `node_modules` are excluded, because they churn without changing what the app shows.
-- Filesystem events are coalesced, so one Git command produces one reload rather than a burst.
+- The first change reloads right away. The rest of the burst a Git command produces is coalesced into at most one more reload once the repository has been quiet for 300 ms, so the settled end state is picked up too.
 - Only real changes count. Reads are ignored, so the app looking at the repository never makes it reload itself.
 - Reloads wait for a safe moment. Nothing is reloaded while a modal, prompt, or operation is open; the reload happens once you close it.
 - While the watcher is running, a blue circle appears in the bottom-right status bar.
