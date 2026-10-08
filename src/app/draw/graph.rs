@@ -33,7 +33,7 @@ impl App {
             if self.graph_selected != 0
                 && let Some(identity) = self.graph_identity_at(self.graph_selected)
             {
-                self.current_diff = crate::git::queries::diffs::get_filenames_diff_at_oid(repo, identity.oid);
+                self.current_diff = self.graph_files_diff(repo, identity.oid);
                 self.current_diff_identity = Some(identity);
             }
         }
@@ -108,6 +108,8 @@ impl App {
         let width = graph_range.iter().map(|line| line.spans.iter().filter(|span| !span.content.is_empty()).map(|span| span.content.chars().count()).sum::<usize>()).max().unwrap_or(0) as u16;
         let search_highlight_indices: HashSet<usize> =
             if self.layout_config.is_search && self.search_path.is_some() { self.search_rows.iter().map(|row| row.graph_index).filter(|&index| index != 0).collect() } else { HashSet::new() };
+        // The Ctrl+click comparison anchor is highlighted like a second selection.
+        let compare_anchor_oid = self.graph_oid_at(self.graph_selected).and_then(|selected| self.active_graph_compare_oid(selected));
         for idx in 0..visible_height {
             let optional_cell_count = usize::from(self.layout_config.is_shas) + usize::from(self.layout_config.is_graph_dates) + usize::from(self.layout_config.is_graph_committers);
             let mut cells = Vec::with_capacity(2 + optional_cell_count);
@@ -130,9 +132,10 @@ impl App {
             let global_idx = idx + start;
             let is_selected = idx < visible_len && global_idx == self.graph_selected && self.focus == Focus::Viewport;
             let is_search_highlighted = idx < visible_len && search_highlight_indices.contains(&global_idx);
-            if is_selected {
+            let is_compare_anchor = idx < visible_len && compare_anchor_oid.is_some() && self.graph_oid_at(global_idx) == compare_anchor_oid;
+            if is_selected || (is_compare_anchor && self.focus == Focus::Viewport) {
                 row = row.style(Style::default().bg(cursor_line));
-            } else if is_search_highlighted {
+            } else if is_search_highlighted || is_compare_anchor {
                 row = row.style(Style::default().bg(self.theme.cursor_line_color()));
             } else if global_idx.is_multiple_of(2) {
                 row = row.style(Style::default().bg(self.theme.background_or_default(self.theme.COLOR_GREY_900)));

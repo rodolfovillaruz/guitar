@@ -92,6 +92,7 @@ impl Default for App {
             // Cache
             current_diff: Vec::new(),
             current_diff_identity: None,
+            graph_compare_oid: None,
             is_uncommitted_loaded: false,
             file_name: None,
             viewer_lines: Vec::new(),

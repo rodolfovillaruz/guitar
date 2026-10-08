@@ -6,7 +6,7 @@ use crate::{
     core::graph_service::{GraphBranchJumpDirection, GraphLookupKind, GraphPane, GraphPaneRow},
     git::{
         actions::{checkout::checkout_branch, tagging::untag},
-        queries::{commits::get_current_branch, diffs::get_filenames_diff_at_oid},
+        queries::commits::get_current_branch,
     },
     helpers::{
         branch_visibility::{current_branch_names as git_current_branch_names, save_branch_visibility},
@@ -166,15 +166,51 @@ impl App {
             let Some(identity) = self.graph_identity_at(self.graph_selected) else {
                 return;
             };
-            self.current_diff = get_filenames_diff_at_oid(&repo, identity.oid);
+            self.current_diff = self.graph_files_diff(&repo, identity.oid);
             self.current_diff_identity = Some(identity);
         }
     }
 
     pub(crate) fn select_graph_index(&mut self, idx: usize) {
+        self.graph_compare_oid = None;
+        self.set_graph_selected_index(idx);
+    }
+
+    fn set_graph_selected_index(&mut self, idx: usize) {
         self.graph.pending_selection_restore = None;
         self.graph_selected = Self::clamp_selection(idx, self.graph_commit_count());
         self.refresh_current_diff_for_graph_selection();
+    }
+
+    // Ctrl+click: keep the previously selected commit as the comparison anchor and select the
+    // clicked commit, so the status pane lists the files that differ between the two.
+    pub(crate) fn select_graph_index_for_compare(&mut self, idx: usize) {
+        let idx = Self::clamp_selection(idx, self.graph_commit_count());
+        let target = if idx == 0 { None } else { self.graph_oid_at(idx) };
+        let selected = if self.graph_selected == 0 { None } else { self.graph_oid_at(self.graph_selected) };
+
+        let Some(target) = target else {
+            self.select_graph_index(idx);
+            return;
+        };
+
+        // Ctrl+clicking the anchor again drops back to a single-commit view of it.
+        if self.graph_compare_oid == Some(target) {
+            self.select_graph_index(idx);
+            return;
+        }
+
+        let Some(anchor) = self.graph_compare_oid.or(selected) else {
+            self.select_graph_index(idx);
+            return;
+        };
+        if anchor == target {
+            self.select_graph_index(idx);
+            return;
+        }
+
+        self.graph_compare_oid = Some(anchor);
+        self.set_graph_selected_index(idx);
     }
 
     fn center_graph_scroll_on_selection(&self) {

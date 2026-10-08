@@ -9,7 +9,7 @@ use crate::{
         tagging::tag,
         worktrees::{create_worktree, is_valid_worktree_name, lock_worktree},
     },
-    git::queries::{diffs::get_filenames_diff_at_oid, files::search_tracked_files},
+    git::queries::files::search_tracked_files,
     helpers::{
         branch_visibility::save_branch_visibility,
         keymap::{KeyBinding, rebind_keymap_selection, save_keymaps, save_keymaps_to_path},
@@ -627,12 +627,13 @@ impl App {
                             let next = self.oids.get_sorted_aliases().iter().position(|&alias| alias == oid_alias).unwrap();
 
                             self.graph_selected = next;
+                            self.graph_compare_oid = None;
                             self.current_diff.clear();
                             self.current_diff_identity = None;
                             if let Some(repo) = self.repo.clone()
                                 && let Some(identity) = self.graph_identity_at(self.graph_selected)
                             {
-                                self.current_diff = get_filenames_diff_at_oid(&repo, identity.oid);
+                                self.current_diff = self.graph_files_diff(&repo, identity.oid);
                                 self.current_diff_identity = Some(identity);
                             }
                             self.modal_input.clear();

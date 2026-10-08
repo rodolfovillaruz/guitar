@@ -529,6 +529,7 @@ impl App {
                 match checkout_branch(repo, &mut self.branches.hidden_branch_names, &mut self.branches.local, alias, &branch) {
                     Ok(_) => {
                         // Keep graph selection on the commit that owns the checked-out branch.
+                        self.graph_compare_oid = None;
                         self.graph_selected = graph_index.or_else(|| self.oids.get_sorted_aliases().iter().position(|o| o == &alias)).unwrap_or(0);
 
                         if let Some(path) = &self.path {

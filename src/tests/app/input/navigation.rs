@@ -895,6 +895,69 @@ fn graph_row_lookup_result_opens_inspector_with_reflog() {
 }
 
 #[test]
+fn compare_selection_lists_files_between_both_commits() {
+    let (mut app, root_oid, _parent_oid, child_oid) = graph_app_with_history();
+    app.select_graph_index(1);
+
+    app.select_graph_index_for_compare(3);
+
+    assert_eq!(app.graph_selected, 3);
+    assert_eq!(app.graph_compare_oid, Some(child_oid));
+    let repo = app.repo.clone().unwrap();
+    assert_eq!(app.graph_compare_range(&repo, root_oid), Some((root_oid, child_oid)));
+    let mut files = diff_filenames(&app);
+    files.sort();
+    assert_eq!(files, vec!["child.txt", "parent.txt"]);
+    assert!(app.selected_commit_diff_is_loaded());
+}
+
+#[test]
+fn compare_selection_keeps_anchor_and_moves_second_commit() {
+    let (mut app, _root_oid, parent_oid, child_oid) = graph_app_with_history();
+    app.select_graph_index(1);
+    app.select_graph_index_for_compare(3);
+
+    app.select_graph_index_for_compare(2);
+
+    assert_eq!(app.graph_selected, 2);
+    assert_eq!(app.graph_compare_oid, Some(child_oid));
+    let repo = app.repo.clone().unwrap();
+    assert_eq!(app.graph_compare_range(&repo, parent_oid), Some((parent_oid, child_oid)));
+    assert_eq!(diff_filenames(&app), vec!["child.txt"]);
+}
+
+#[test]
+fn compare_selection_clears_on_plain_select_or_anchor_reclick() {
+    let (mut app, _root_oid, _parent_oid, _child_oid) = graph_app_with_history();
+    app.select_graph_index(1);
+    app.select_graph_index_for_compare(3);
+
+    app.select_graph_index_for_compare(1);
+
+    assert_eq!(app.graph_selected, 1);
+    assert_eq!(app.graph_compare_oid, None);
+    assert_eq!(diff_filenames(&app), vec!["child.txt"]);
+
+    app.select_graph_index_for_compare(3);
+    app.select_graph_index(2);
+
+    assert_eq!(app.graph_compare_oid, None);
+    assert_eq!(diff_filenames(&app), vec!["parent.txt"]);
+}
+
+#[test]
+fn compare_selection_from_uncommitted_row_is_a_plain_select() {
+    let (mut app, _root_oid, _parent_oid, _child_oid) = graph_app_with_history();
+    app.select_graph_index(0);
+
+    app.select_graph_index_for_compare(2);
+
+    assert_eq!(app.graph_selected, 2);
+    assert_eq!(app.graph_compare_oid, None);
+    assert_eq!(diff_filenames(&app), vec!["parent.txt"]);
+}
+
+#[test]
 fn pane_row_jump_uses_graph_index_and_refreshes_diff() {
     let (mut app, _root_oid, _parent_oid, _child_oid) = graph_app_with_history();
     app.focus = Focus::Branches;

@@ -1380,3 +1380,36 @@ fn keyboard_resize_noops_in_settings_modals_and_non_split_zen() {
     app.on_resize_pane_right();
     assert_eq!(app.layout_config.width_left_pane, 30);
 }
+
+#[test]
+fn ctrl_click_graph_row_compares_it_with_the_selected_commit() {
+    let (path, repo) = temp_repo("ctrl-click-compare");
+    let first = commit_file(&repo, "first.txt", "first");
+    let second = commit_file(&repo, "second.txt", "second");
+    let third = commit_file(&repo, "third.txt", "third");
+
+    let mut app = graph_app();
+    app.path = Some(path.display().to_string());
+    app.repo = Some(Rc::new(repo));
+    let aliases = [third, second, first].map(|oid| app.oids.get_alias_by_oid(oid));
+    app.oids.sorted_aliases = vec![NONE, aliases[0], aliases[1], aliases[2]];
+    app.graph.total = 4;
+
+    app.handle_mouse_event(left_down(1, 1));
+    app.handle_mouse_event(MouseEvent { kind: MouseEventKind::Down(MouseButton::Left), column: 1, row: 3, modifiers: KeyModifiers::CONTROL });
+
+    assert_eq!(app.graph_selected, 3);
+    assert_eq!(app.graph_compare_oid, Some(third));
+    let mut files = app.current_diff.iter().map(|change| change.filename.clone()).collect::<Vec<_>>();
+    files.sort();
+    assert_eq!(files, vec!["second.txt", "third.txt"]);
+
+    // A plain click drops the comparison.
+    app.handle_mouse_event(left_down(1, 2));
+
+    assert_eq!(app.graph_selected, 2);
+    assert_eq!(app.graph_compare_oid, None);
+    assert_eq!(app.current_diff.iter().map(|change| change.filename.as_str()).collect::<Vec<_>>(), vec!["second.txt"]);
+
+    let _ = fs::remove_dir_all(path);
+}

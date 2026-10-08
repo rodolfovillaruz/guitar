@@ -4,7 +4,7 @@ use crate::{
         state::defaults::{SplitViewerRow, ViewerMode},
     },
     git::queries::{
-        diffs::{get_conflict_file, get_file_at_oid, get_file_at_workdir, get_file_diff_at_oid, get_file_diff_at_workdir},
+        diffs::{get_conflict_file, get_file_at_oid, get_file_at_workdir, get_file_diff_at_oid, get_file_diff_at_workdir, get_file_diff_between_oids},
         helpers::{ConflictFile, FileChanges, Hunk},
     },
     helpers::{layout::scrollbar_content_length, text::wrap_words},
@@ -364,6 +364,9 @@ impl App {
         // Oid::zero represents the uncommitted pseudo-row and reads from the working tree.
         let (original_lines, hunks) = if oid == Oid::ZERO_SHA1 {
             (get_file_at_workdir(repo, &filename), get_file_diff_at_workdir(repo, &filename).unwrap_or_default())
+        } else if let Some((from, to)) = self.graph_compare_range(repo, oid) {
+            // A Ctrl+click comparison reads the newer commit and diffs it against the older one.
+            (get_file_at_oid(repo, to, &filename), get_file_diff_between_oids(repo, from, to, &filename).unwrap_or_default())
         } else {
             (get_file_at_oid(repo, oid, &filename), get_file_diff_at_oid(repo, oid, &filename).unwrap_or_default())
         };

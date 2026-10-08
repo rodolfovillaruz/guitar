@@ -115,6 +115,32 @@ fn checkout_branch(repo: &Repository, name: &str) {
 }
 
 #[test]
+fn diff_between_oids_spans_every_commit_in_the_range() {
+    let (path, repo) = temp_repo("between");
+    write(&path, "a.txt", "one\n");
+    let base = commit(&repo, "a.txt", "base");
+    write(&path, "a.txt", "one\ntwo\n");
+    commit(&repo, "a.txt", "edit a");
+    write(&path, "b.txt", "new\n");
+    let tip = commit(&repo, "b.txt", "add b");
+
+    let mut changes = get_filenames_diff_between_oids(&repo, base, tip).into_iter().map(|change| (change.filename, change.status)).collect::<Vec<_>>();
+    changes.sort_by(|left, right| left.0.cmp(&right.0));
+    assert_eq!(changes, vec![("a.txt".to_string(), FileStatus::Modified), ("b.txt".to_string(), FileStatus::Added)]);
+
+    // Reversing the range flips additions into deletions.
+    let reversed = get_filenames_diff_between_oids(&repo, tip, base);
+    assert!(reversed.iter().any(|change| change.filename == "b.txt" && change.status == FileStatus::Deleted));
+
+    let hunks = get_file_diff_between_oids(&repo, base, tip, "a.txt").unwrap();
+    let added = hunks.iter().flat_map(|hunk| hunk.lines.iter()).filter(|line| line.origin == '+').map(|line| line.content.trim_end().to_string()).collect::<Vec<_>>();
+    assert_eq!(added, vec!["two".to_string()]);
+    assert!(get_file_diff_between_oids(&repo, base, tip, "missing.txt").unwrap().is_empty());
+
+    let _ = fs::remove_dir_all(path);
+}
+
+#[test]
 fn workdir_diff_marks_conflicted_paths() {
     let (path, repo) = temp_repo("conflict");
     write(&path, "file.txt", "base\n");

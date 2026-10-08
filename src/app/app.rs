@@ -12,7 +12,12 @@ use crate::{
             path::try_into_git_repo_root,
             repo::{git_env_active, open_repo},
         },
-        queries::{diffs::get_filenames_diff_at_oid, files::FileSearchResult, submodules::list_submodules, worktrees::list_worktrees},
+        queries::{
+            diffs::{get_filenames_diff_at_oid, get_filenames_diff_between_oids},
+            files::FileSearchResult,
+            submodules::list_submodules,
+            worktrees::list_worktrees,
+        },
     },
     helpers::{
         branch_visibility::{current_branch_names, load_branch_visibility, prune_hidden_branches, save_branch_visibility},
@@ -539,6 +544,8 @@ pub struct App {
     // Cached file and diff data for the currently selected graph or status row.
     pub current_diff: Vec<FileChange>,
     pub current_diff_identity: Option<GraphIndexIdentity>,
+    // Commit Ctrl+clicked as the other side of a two-commit comparison with the selected row.
+    pub graph_compare_oid: Option<Oid>,
     pub is_uncommitted_loaded: bool,
     pub file_name: Option<String>,
     pub viewer_lines: Vec<ListItem<'static>>,
@@ -976,6 +983,7 @@ impl App {
             self.heatmap = empty_heatmap();
             self.current_diff = Vec::new();
             self.current_diff_identity = None;
+            self.graph_compare_oid = None;
             self.is_uncommitted_loaded = false;
             self.uncommitted = UncommittedChanges::default();
             self.viewer_lines = Vec::new();
@@ -1272,7 +1280,7 @@ impl App {
                 if self.graph_selected != 0
                     && let Some(identity) = self.graph_identity_at(self.graph_selected)
                 {
-                    self.current_diff = get_filenames_diff_at_oid(repo, identity.oid);
+                    self.current_diff = self.graph_files_diff(repo, identity.oid);
                     self.current_diff_identity = Some(identity);
                 }
             },
@@ -1337,7 +1345,7 @@ impl App {
                         let oid = row.oid;
                         self.cache_graph_row(row);
                         if index == self.graph_selected && index != 0 {
-                            self.current_diff = get_filenames_diff_at_oid(repo, oid);
+                            self.current_diff = self.graph_files_diff(repo, oid);
                             self.current_diff_identity = self.graph_identity_at(index);
                         }
                     },
@@ -1346,7 +1354,7 @@ impl App {
                         let oid = row.oid;
                         self.cache_graph_row(row);
                         if index == self.graph_selected {
-                            self.current_diff = get_filenames_diff_at_oid(repo, oid);
+                            self.current_diff = self.graph_files_diff(repo, oid);
                             self.current_diff_identity = self.graph_identity_at(index);
                             self.layout_config.is_inspector = true;
                             self.focus = Focus::Inspector;
@@ -1410,6 +1418,34 @@ impl App {
 
     pub(crate) fn graph_oid_at(&self, index: usize) -> Option<Oid> {
         self.graph_identity_at(index).map(|identity| identity.oid)
+    }
+
+    // The compare anchor only applies while a different commit row is selected.
+    pub(crate) fn active_graph_compare_oid(&self, selected: Oid) -> Option<Oid> {
+        self.graph_compare_oid.filter(|&anchor| self.graph_selected != 0 && anchor != selected && selected != Oid::zero())
+    }
+
+    // Order a two-commit comparison as (older, newer) so additions read forward in history.
+    pub(crate) fn graph_compare_range(&self, repo: &git2::Repository, selected: Oid) -> Option<(Oid, Oid)> {
+        let anchor = self.active_graph_compare_oid(selected)?;
+        if repo.graph_descendant_of(anchor, selected).unwrap_or(false) {
+            return Some((selected, anchor));
+        }
+        if repo.graph_descendant_of(selected, anchor).unwrap_or(false) {
+            return Some((anchor, selected));
+        }
+
+        // Unrelated commits fall back to commit time.
+        let time = |oid: Oid| repo.find_commit(oid).map(|commit| commit.time().seconds()).unwrap_or_default();
+        if time(anchor) <= time(selected) { Some((anchor, selected)) } else { Some((selected, anchor)) }
+    }
+
+    // File list for the selected commit, or between both commits while comparing.
+    pub(crate) fn graph_files_diff(&self, repo: &git2::Repository, selected: Oid) -> Vec<FileChange> {
+        match self.graph_compare_range(repo, selected) {
+            Some((from, to)) => get_filenames_diff_between_oids(repo, from, to),
+            None => get_filenames_diff_at_oid(repo, selected),
+        }
     }
 
     pub(crate) fn selected_commit_diff_is_loaded(&self) -> bool {
@@ -1524,6 +1560,7 @@ impl App {
 
     fn select_graph_index_from_lookup(&mut self, repo: &git2::Repository, index: usize) {
         self.graph.pending_selection_restore = None;
+        self.graph_compare_oid = None;
         self.set_graph_index_from_lookup(repo, index);
     }
 
@@ -1541,7 +1578,7 @@ impl App {
         if self.graph_selected != 0
             && let Some(identity) = self.graph_identity_at(self.graph_selected)
         {
-            self.current_diff = get_filenames_diff_at_oid(repo, identity.oid);
+            self.current_diff = self.graph_files_diff(repo, identity.oid);
             self.current_diff_identity = Some(identity);
         }
     }

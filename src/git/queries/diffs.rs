@@ -191,19 +191,40 @@ pub fn get_filenames_diff_at_oid(repo: &Repository, oid: Oid) -> Vec<FileChange>
 
     // Compare against the first parent, matching the normal `git show` view of merges.
     let parent_tree = commit.parent(0).unwrap().tree().unwrap();
+    collect_tree_changes(repo, &parent_tree, &tree, &mut changes);
+
+    changes
+}
+
+// List files that differ between two commits, reading `from` as the old side.
+pub fn get_filenames_diff_between_oids(repo: &Repository, from: Oid, to: Oid) -> Vec<FileChange> {
+    let mut changes = Vec::new();
+    let (Ok(from_tree), Ok(to_tree)) = (repo.find_commit(from).and_then(|commit| commit.tree()), repo.find_commit(to).and_then(|commit| commit.tree())) else {
+        return changes;
+    };
+
+    collect_tree_changes(repo, &from_tree, &to_tree, &mut changes);
+    changes
+}
+
+fn collect_tree_changes(repo: &Repository, old_tree: &git2::Tree<'_>, new_tree: &git2::Tree<'_>, changes: &mut Vec<FileChange>) {
     let mut opts = DiffOptions::new();
     opts.include_untracked(false).recurse_untracked_dirs(false).include_typechange(false).ignore_submodules(false).show_binary(false).minimal(false).skip_binary_check(true);
 
-    let diff = repo.diff_tree_to_tree(Some(&parent_tree), Some(&tree), Some(&mut opts)).unwrap();
+    let Ok(diff) = repo.diff_tree_to_tree(Some(old_tree), Some(new_tree), Some(&mut opts)) else {
+        return;
+    };
 
     for delta in diff.deltas() {
-        let path = delta.new_file().path().or_else(|| delta.old_file().path()).unwrap().display().to_string();
+        let Some(path) = delta.new_file().path().or_else(|| delta.old_file().path()).map(|path| path.display().to_string()) else {
+            continue;
+        };
 
         // Tree deltas can represent directories; expand them so the list stays file-oriented.
         let is_folder = !path.contains('.');
 
         if is_folder && let Ok(tree_obj) = repo.find_tree(delta.new_file().id()) {
-            walk_tree(repo, &tree_obj, &path, &mut changes);
+            walk_tree(repo, &tree_obj, &path, changes);
             continue;
         }
 
@@ -218,8 +239,6 @@ pub fn get_filenames_diff_at_oid(repo: &Repository, oid: Oid) -> Vec<FileChange>
             },
         });
     }
-
-    changes
 }
 
 // Build structured hunks for a working tree file against HEAD and the index.
@@ -245,6 +264,17 @@ pub fn get_file_diff_at_oid(repo: &Repository, commit_oid: Oid, filename: &str) 
     diff_options.pathspec(filename);
 
     diff_to_hunks(repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), Some(&mut diff_options))?)
+}
+
+// Build structured hunks for one file between two commits, reading `from` as the old side.
+pub fn get_file_diff_between_oids(repo: &Repository, from: Oid, to: Oid, filename: &str) -> std::result::Result<Vec<Hunk>, git2::Error> {
+    let from_tree = repo.find_commit(from)?.tree()?;
+    let to_tree = repo.find_commit(to)?.tree()?;
+
+    let mut diff_options = DiffOptions::new();
+    diff_options.pathspec(filename);
+
+    diff_to_hunks(repo.diff_tree_to_tree(Some(&from_tree), Some(&to_tree), Some(&mut diff_options))?)
 }
 
 // Read file contents from a commit, returning sanitized display lines.

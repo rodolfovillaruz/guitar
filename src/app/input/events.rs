@@ -97,6 +97,9 @@ impl App {
                     return;
                 }
                 if !self.handle_context_menu_left_click(mouse_event.column, mouse_event.row) {
+                    if mouse_event.modifiers.contains(KeyModifiers::CONTROL) && self.handle_compare_click(mouse_event.column, mouse_event.row) {
+                        return;
+                    }
                     self.handle_mouse_down(mouse_event.column, mouse_event.row);
                 }
             },
@@ -150,6 +153,22 @@ impl App {
         let left = area.x.saturating_add(area.width.saturating_sub(MODAL_ESC_TITLE_WIDTH.saturating_add(1)));
         let right = area.x.saturating_add(area.width.saturating_sub(1));
         column >= left && column < right
+    }
+
+    // Ctrl+click on a graph row compares it with the currently selected commit.
+    fn handle_compare_click(&mut self, column: u16, row: u16) -> bool {
+        if self.viewport != Viewport::Graph || self.scrollbar_drag_at(column, row).is_some() || self.layout_drag_at(column, row).is_some() {
+            return false;
+        }
+        let Some(MouseSelectionTarget::Graph(index)) = self.mouse_selection_target_at(column, row) else {
+            return false;
+        };
+
+        self.mouse_drag = None;
+        self.last_mouse_click = None;
+        self.focus = Focus::Viewport;
+        self.select_graph_index_for_compare(index);
+        true
     }
 
     fn handle_mouse_down(&mut self, column: u16, row: u16) {

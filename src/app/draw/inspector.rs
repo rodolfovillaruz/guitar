@@ -53,12 +53,23 @@ impl App {
                 let body = commit.body().ok().flatten().map(str::to_string).unwrap_or_else(|| format!("{} {}", self.symbols.empty_state.mark, empty::NO_BODY()));
 
                 // Sections are plain list rows so they scroll with the same pane machinery.
-                lines = vec![
+                lines = Vec::new();
+                if let Some((from, to)) = self.graph_compare_range(repo, oid) {
+                    lines.push(Line::from(Span::styled(inspector::COMPARING(), Style::default().fg(self.theme.COLOR_HIGHLIGHTED))));
+                    for (symbol, side, color) in [(&self.symbols.status.deleted_spaced, from, self.theme.COLOR_RED), (&self.symbols.status.added_spaced, to, self.theme.COLOR_GREEN)] {
+                        lines.push(Line::from(vec![
+                            Span::styled(symbol.clone(), Style::default().fg(color)),
+                            Span::styled(truncate_with_ellipsis(&format!("#{}", side), max_text_width.saturating_sub(symbol.chars().count())), Style::default().fg(self.theme.COLOR_TEXT)),
+                        ]));
+                    }
+                    lines.push(Line::default());
+                }
+                lines.extend(vec![
                     Line::from(Span::styled(inspector::COMMIT_SHA(), Style::default().fg(self.theme.COLOR_HIGHLIGHTED))),
                     Line::from(Span::styled(truncate_with_ellipsis(&format!("#{}", oid), max_text_width), Style::default().fg(self.theme.COLOR_TEXT))),
                     Line::default(),
                     Line::from(Span::styled(inspector::PARENT_SHAS(), Style::default().fg(self.theme.COLOR_HIGHLIGHTED))),
-                ];
+                ]);
                 for parent_id in commit.parent_ids() {
                     let text = truncate_with_ellipsis(&format!("#{}", parent_id), max_text_width);
                     lines.push(Line::from(Span::styled(text, Style::default().fg(self.theme.COLOR_TEXT))));
