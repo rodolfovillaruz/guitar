@@ -691,9 +691,7 @@ fn reload_replaces_retained_rows_with_fresh_topology() {
 
 #[test]
 fn cursor_line_is_brighter_focused_than_unfocused() {
-    let mut app = App::default();
-    app.theme = Theme::classic();
-    app.layout_config.is_cursor_focus = true;
+    let mut app = App { theme: Theme::classic(), layout_config: LayoutConfig { is_cursor_focus: true, ..Default::default() }, ..Default::default() };
 
     app.is_focused = true;
     let focused = app.cursor_line_background();

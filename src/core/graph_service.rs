@@ -141,7 +141,7 @@ pub enum GraphEvent {
     PaneWindow { generation: Generation, version: GraphVersion, pane: GraphPane, start: usize, end: usize, total: usize, rows: Vec<GraphPaneRow> },
     FileHistory { generation: Generation, request_id: RequestId, path: String, rows: Vec<GraphFileHistoryRow>, error: Option<String> },
     LookupResult { generation: Generation, request_id: RequestId, result: GraphLookupResult },
-    Heatmap { generation: Generation, heatmap: [[usize; WEEKS]; DAYS] },
+    Heatmap { generation: Generation, heatmap: Box<[[usize; WEEKS]; DAYS]> },
     Error { generation: Generation, message: String },
 }
 
@@ -219,7 +219,7 @@ fn run_graph_service(config: GraphServiceConfig, rx: Receiver<GraphCommand>, tx:
         if is_complete {
             let repo = walk_ctx.repo.borrow();
             let heatmap = build_heatmap(&repo, &walk_ctx.oids.oids);
-            let _ = tx.send(GraphEvent::Heatmap { generation, heatmap });
+            let _ = tx.send(GraphEvent::Heatmap { generation, heatmap: Box::new(heatmap) });
 
             if let Some((request_id, path)) = pending_file_history.take() {
                 send_file_history(generation, request_id, path, &tx, &walk_ctx, &config.symbols);
@@ -228,6 +228,7 @@ fn run_graph_service(config: GraphServiceConfig, rx: Receiver<GraphCommand>, tx:
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drain_commands(
     generation: Generation, version: GraphVersion, rx: &Receiver<GraphCommand>, tx: &Sender<GraphEvent>, walk_ctx: &Walker, worktrees: &mut Worktrees,
     pending_graph: &mut Option<(RequestId, usize, usize)>, pending_file_history: &mut Option<(RequestId, String)>, hidden_branch_names: &HashSet<String>, symbols: &SymbolTheme,
@@ -240,6 +241,7 @@ fn drain_commands(
     true
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_command(
     generation: Generation, version: GraphVersion, command: GraphCommand, tx: &Sender<GraphEvent>, walk_ctx: &Walker, worktrees: &mut Worktrees, pending_graph: &mut Option<(RequestId, usize, usize)>,
     pending_file_history: &mut Option<(RequestId, String)>, hidden_branch_names: &HashSet<String>, symbols: &SymbolTheme,
@@ -274,6 +276,7 @@ fn handle_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn send_graph_window(
     generation: Generation, request_id: RequestId, version: GraphVersion, start: usize, end: usize, tx: &Sender<GraphEvent>, walk_ctx: &Walker, worktrees: &Worktrees,
     hidden_branch_names: &HashSet<String>, symbols: &SymbolTheme,

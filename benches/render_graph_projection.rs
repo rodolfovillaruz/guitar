@@ -20,12 +20,14 @@ fn main() {
     divan::main();
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_case(theme: &Theme, symbols: &SymbolTheme, rows: &[GraphRow], history: &GraphHistory, head_alias: u32, start: usize, end: usize, render_uncommitted_row: bool) -> (usize, usize) {
     let lines = black_box(render_graph_projection_lines(theme, symbols, rows, history, head_alias, start, end, render_uncommitted_row));
     let bytes = lines.iter().map(|line| line.width()).sum();
     (lines.len(), bytes)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn bench_render(bencher: Bencher, theme: &Theme, symbols: &SymbolTheme, rows: &[GraphRow], history: &GraphHistory, head_alias: u32, start: usize, end: usize, render_uncommitted_row: bool) {
     let rendered = render_case(theme, symbols, rows, history, head_alias, start, end, render_uncommitted_row);
 

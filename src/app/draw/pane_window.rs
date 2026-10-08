@@ -25,6 +25,7 @@ pub(super) fn preloaded_pane_window(start: usize, end: usize, total_lines: usize
     (start.saturating_sub(visible_height), end.saturating_add(visible_height).min(total_lines))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn zebra_list_items<'a>(
     lines: &[Line<'a>], visible_height: usize, global_start: usize, selected: usize, is_focused: bool, selection_enabled: bool, cursor_line: Color, theme: &Theme,
 ) -> Vec<ListItem<'a>> {

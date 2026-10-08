@@ -350,6 +350,7 @@ fn centered_loading_lines(visible_height: usize, width: usize, style: Style) -> 
     lines
 }
 
+#[allow(clippy::too_many_arguments)]
 fn status_list_items<'a>(
     rows: &[StatusRow<'a>], visible_height: usize, start: usize, selected: usize, is_focused: bool, selection_enabled: bool, search_highlight_path: Option<&str>, cursor_line: ratatui::style::Color,
     theme: &crate::helpers::palette::Theme,

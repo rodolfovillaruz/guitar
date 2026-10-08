@@ -86,7 +86,7 @@ impl Buffer {
             }
         }
 
-        if !self.transient_lanes.iter().any(|idx| *idx == lane_idx) {
+        if !self.transient_lanes.contains(&lane_idx) {
             self.transient_lanes.push(lane_idx);
         }
     }
@@ -112,7 +112,7 @@ impl Buffer {
         }
 
         // Planned mergers split a lane so the second parent can draw toward its target later.
-        if let Some(merger_idx) = self.curr.iter().position(|inner| self.mergers.iter().any(|alias| *alias == inner.alias)) {
+        if let Some(merger_idx) = self.curr.iter().position(|inner| self.mergers.contains(&inner.alias)) {
             if let Some(merger_pos) = self.mergers.iter().position(|alias| *alias == self.curr[merger_idx].alias) {
                 self.mergers.remove(merger_pos);
             }

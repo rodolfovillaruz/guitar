@@ -28,6 +28,7 @@ pub const GRAPH_COMMITTER_WIDTH: usize = 18;
 
 // Render graph symbols from worker-projected rows. The lane history is still
 // precomputed by Buffer, but only for the requested visible range.
+#[allow(clippy::too_many_arguments)]
 pub fn render_graph_projection(
     theme: &Theme, symbols: &SymbolTheme, rows: &[GraphRow], history: &GraphHistory, head_alias: u32, start: usize, end: usize, render_uncommitted_row: bool,
 ) -> Vec<Line<'static>> {
@@ -528,7 +529,7 @@ pub fn remove_empty_columns(lines: &mut Vec<Line<'_>>, symbols: &SymbolTheme) {
 
     // Graph lanes occupy two spans, so pruning must happen in span pairs.
     for line in lines.iter() {
-        for (pair_idx, pair) in line.spans.chunks_exact(2).enumerate() {
+        for (pair_idx, pair) in line.spans.as_chunks::<2>().0.iter().enumerate() {
             seen_pair[pair_idx] = true;
             if is_visible_lane_symbol(&pair[0], symbols) || is_visible_lane_symbol(&pair[1], symbols) {
                 keep_pair[pair_idx] = true;
@@ -613,6 +614,7 @@ pub fn render_committer_projection(theme: &Theme, rows: &[GraphRow], selected: u
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_message_projection(
     theme: &Theme, symbols: &SymbolTheme, rows: &[GraphRow], show_reflog_labels: bool, show_ref_labels: bool, selected: usize, uncommitted: &UncommittedChanges, render_uncommitted_row: bool,
 ) -> Vec<Line<'static>> {

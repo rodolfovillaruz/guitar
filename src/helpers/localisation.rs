@@ -9,7 +9,9 @@ use std::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Language {
+    #[default]
     English = 0,
     Spanish = 1,
     French = 2,
@@ -63,12 +65,6 @@ impl Language {
     }
 }
 
-impl Default for Language {
-    fn default() -> Self {
-        Self::English
-    }
-}
-
 static ACTIVE_LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 
 pub fn active_language() -> Language {
@@ -87,12 +83,11 @@ fn language_path() -> PathBuf {
 }
 
 pub fn load_language_from_path(path: &Path) -> Language {
-    if let Ok(contents) = fs::read_to_string(path) {
-        if let Ok(language_id) = facet_json::from_str::<String>(&contents)
-            && let Some(language) = Language::from_id(&language_id)
-        {
-            return language;
-        }
+    if let Ok(contents) = fs::read_to_string(path)
+        && let Ok(language_id) = facet_json::from_str::<String>(&contents)
+        && let Some(language) = Language::from_id(&language_id)
+    {
+        return language;
     }
 
     Language::English

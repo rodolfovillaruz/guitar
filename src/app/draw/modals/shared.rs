@@ -31,6 +31,7 @@ pub(crate) fn action_row(actions: &[(&str, &str)], style: Style) -> Line<'static
     Line::from(Span::styled(text, style))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn render_modal_text_input(
     frame: &mut Frame, area: Rect, input: &mut TextInput, masked: bool, text_style: Style, border_style: Style, title: Option<Span<'static>>, show_cursor: bool, symbols: &SymbolTheme,
 ) {

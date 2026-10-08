@@ -1368,7 +1368,7 @@ impl App {
             },
             GraphEvent::Heatmap { generation, heatmap } => {
                 if generation == self.graph.generation {
-                    self.heatmap = heatmap;
+                    self.heatmap = *heatmap;
                 }
             },
             GraphEvent::Error { generation, message } => {
@@ -1422,7 +1422,7 @@ impl App {
 
     // The compare anchor only applies while a different commit row is selected.
     pub(crate) fn active_graph_compare_oid(&self, selected: Oid) -> Option<Oid> {
-        self.graph_compare_oid.filter(|&anchor| self.graph_selected != 0 && anchor != selected && selected != Oid::zero())
+        self.graph_compare_oid.filter(|&anchor| self.graph_selected != 0 && anchor != selected && selected != Oid::ZERO_SHA1)
     }
 
     // Order a two-commit comparison as (older, newer) so additions read forward in history.

@@ -20,7 +20,10 @@ use ratatui::{
     widgets::{Block, List, ListItem, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
-const SETTINGS_PANE_COMMANDS: &[(&str, Command, fn() -> &'static str)] = &[
+// Settings labels are looked up at draw time so they follow the active language.
+type LocalizedLabel = fn() -> &'static str;
+
+const SETTINGS_PANE_COMMANDS: &[(&str, Command, LocalizedLabel)] = &[
     ("1", Command::ToggleBranches, settings_text::BRANCHES),
     ("2", Command::ToggleTags, settings_text::TAGS),
     ("3", Command::ToggleStashes, settings_text::STASHES),
@@ -34,11 +37,11 @@ const SETTINGS_PANE_COMMANDS: &[(&str, Command, fn() -> &'static str)] = &[
 ];
 
 // No key column here: shortcuts are listed in the shortcuts tab, not repeated beside the toggles.
-const SETTINGS_BACKGROUND_COMMANDS: &[(Command, fn() -> &'static str)] = &[(Command::ToggleFileWatcher, settings_text::FILE_WATCHER)];
+const SETTINGS_BACKGROUND_COMMANDS: &[(Command, LocalizedLabel)] = &[(Command::ToggleFileWatcher, settings_text::FILE_WATCHER)];
 
-const SETTINGS_CURSOR_COMMANDS: &[(Command, fn() -> &'static str)] = &[(Command::ToggleCursorFocus, settings_text::FOLLOW_FOCUS)];
+const SETTINGS_CURSOR_COMMANDS: &[(Command, LocalizedLabel)] = &[(Command::ToggleCursorFocus, settings_text::FOLLOW_FOCUS)];
 
-const SETTINGS_GRAPH_COMMANDS: &[(&str, Command, fn() -> &'static str)] = &[
+const SETTINGS_GRAPH_COMMANDS: &[(&str, Command, LocalizedLabel)] = &[
     (")", Command::ToggleGraphReflogs, settings_text::GRAPH_REFLOG_COMMITS),
     ("!", Command::ToggleShas, settings_text::SHAS),
     ("@", Command::ToggleGraphDates, settings_text::COMMITTER_DATE_TIME),

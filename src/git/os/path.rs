@@ -13,11 +13,7 @@ pub fn try_into_git_repo_root(start_path: impl AsRef<Path>) -> Option<PathBuf> {
             return Some(current_path.to_path_buf());
         }
 
-        if let Some(parent) = current_path.parent() {
-            current_path = parent;
-        } else {
-            return None;
-        }
+        current_path = current_path.parent()?;
     }
 }
 
