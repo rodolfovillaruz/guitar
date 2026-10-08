@@ -9,7 +9,7 @@ pub fn reset_to_commit(repo: &Repository, target: Oid, reset_type: ResetType) ->
 
     if head.is_branch() {
         // Branch reset moves the checked-out ref before libgit2 updates index/workdir state.
-        let branch_ref_name = head.name().ok_or_else(|| Error::from_str("Invalid branch reference name"))?;
+        let branch_ref_name = head.name().map_err(|_| Error::from_str("Invalid branch reference name"))?;
         let mut branch_ref = repo.find_reference(branch_ref_name)?;
         branch_ref.set_target(target, "reset branch to commit")?;
     } else {

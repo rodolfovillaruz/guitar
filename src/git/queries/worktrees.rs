@@ -86,7 +86,7 @@ pub fn list_worktrees(repo: &Repository, current_path: Option<&Path>) -> Result<
     }
 
     let names = worktree_repo.worktrees()?;
-    let mut linked: Vec<WorktreeEntry> = names.iter().flatten().filter_map(|name| linked_entry(worktree_repo, name, &current)).collect();
+    let mut linked: Vec<WorktreeEntry> = names.iter().filter_map(|name| name.ok().flatten()).filter_map(|name| linked_entry(worktree_repo, name, &current)).collect();
     linked.sort_by(|a, b| a.name.cmp(&b.name));
     entries.extend(linked);
 

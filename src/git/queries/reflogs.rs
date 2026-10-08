@@ -19,7 +19,7 @@ pub fn get_head_reflog_entries(repo: &Repository) -> Result<Vec<HeadReflogEntry>
             continue;
         }
 
-        let message = entry.message().map(str::to_string).or_else(|| entry.message_bytes().map(|bytes| String::from_utf8_lossy(bytes).to_string())).unwrap_or_else(|| "reflog".to_string());
+        let message = entry.message().ok().flatten().map(str::to_string).or_else(|| entry.message_bytes().map(|bytes| String::from_utf8_lossy(bytes).to_string())).unwrap_or_else(|| "reflog".to_string());
 
         entries.push(HeadReflogEntry { selector: format!("HEAD@{{{idx}}}"), old_oid: entry.id_old(), new_oid, message, time: entry.committer().when() });
     }

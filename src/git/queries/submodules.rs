@@ -14,10 +14,10 @@ pub fn list_submodules(repo: &Repository) -> Result<Vec<SubmoduleEntry>, git2::E
 
     for submodule in repo.submodules()? {
         let path = submodule.path().to_path_buf();
-        let name = submodule.name().map(str::to_string).unwrap_or_else(|| path.display().to_string());
+        let name = submodule.name().map(str::to_string).unwrap_or_else(|_| path.display().to_string());
         let status = status_for(repo, &name, &path);
         let sub_repo = submodule.open().ok();
-        let branch = sub_repo.as_ref().and_then(get_current_branch).or_else(|| submodule.branch().map(str::to_string));
+        let branch = sub_repo.as_ref().and_then(get_current_branch).or_else(|| submodule.branch().ok().flatten().map(str::to_string));
         let absolute_path = workdir.join(&path);
 
         let is_index_modified = status.is_index_added() || status.is_index_deleted() || status.is_index_modified();
@@ -31,7 +31,7 @@ pub fn list_submodules(repo: &Repository) -> Result<Vec<SubmoduleEntry>, git2::E
             name,
             path,
             absolute_path,
-            url: submodule.url().map(str::to_string),
+            url: submodule.url().ok().flatten().map(str::to_string),
             branch,
             head: submodule.head_id(),
             index: submodule.index_id(),

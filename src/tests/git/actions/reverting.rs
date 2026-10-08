@@ -66,7 +66,7 @@ fn clean_revert_commits_with_edited_message() {
     let head = repo.head().unwrap().peel_to_commit().unwrap();
     assert_eq!(head.id(), oid);
     assert_eq!(head.parent(0).unwrap().id(), feature);
-    assert_eq!(head.summary(), Some("reverted: feature"));
+    assert_eq!(head.summary().unwrap(), Some("reverted: feature"));
     assert!(!path.join("feature.txt").exists());
     assert!(path.join("base.txt").exists());
     assert_eq!(repo.head().unwrap().peel_to_commit().unwrap().parent(0).unwrap().parent(0).unwrap().id(), base);
@@ -98,7 +98,7 @@ fn conflict_then_continue_commits_with_persisted_message() {
 
     let head = repo.head().unwrap().peel_to_commit().unwrap();
     assert_eq!(head.id(), oid);
-    assert_eq!(head.summary(), Some("reverted: feature"));
+    assert_eq!(head.summary().unwrap(), Some("reverted: feature"));
     assert_eq!(fs::read_to_string(path.join("file.txt")).unwrap(), "resolved\n");
     assert!(!is_revert_in_progress(&repo));
     assert!(!message_path(&repo).exists());

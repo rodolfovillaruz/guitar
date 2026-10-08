@@ -65,7 +65,7 @@ fn clean_rebase_completes_and_updates_branch() {
 
     let outcome = start_rebase(&repo, main).unwrap();
     assert_eq!(outcome, RebaseOutcome::Completed { applied: 1 });
-    assert_eq!(repo.head().unwrap().shorthand(), Some("feature"));
+    assert_eq!(repo.head().unwrap().shorthand().unwrap(), "feature");
     assert_eq!(repo.head().unwrap().peel_to_commit().unwrap().parent(0).unwrap().id(), main);
     assert_ne!(repo.head().unwrap().target(), Some(base));
     let _ = fs::remove_dir_all(path);

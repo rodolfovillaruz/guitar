@@ -84,7 +84,7 @@ pub fn deduplicate(a: &[String], b: &[String]) -> usize {
 // Recursively flatten a tree into added file rows, used for root commits and tree deltas.
 pub fn walk_tree(repo: &Repository, tree: &git2::Tree, base: &str, changes: &mut Vec<FileChange>) {
     for entry in tree.iter() {
-        if let Some(name) = entry.name() {
+        if let Ok(name) = entry.name() {
             let path = if base.is_empty() { name.to_string() } else { format!("{}/{}", base, name) };
 
             match entry.kind() {

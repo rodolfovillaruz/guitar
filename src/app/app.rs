@@ -957,7 +957,7 @@ impl App {
         let pending_selection_restore = if override_path.is_none() && self.graph_selected != 0 {
             self.graph_identity_at(self.graph_selected)
                 .map(|identity| GraphSelectionRestore { oid: identity.oid, selected_offset: self.graph_selected.saturating_sub(self.graph_scroll.get()) })
-                .filter(|restore| restore.oid != Oid::zero())
+                .filter(|restore| restore.oid != Oid::ZERO_SHA1)
         } else {
             None
         };

@@ -60,7 +60,7 @@ fn render_graph_projection_uncommitted_row(bencher: Bencher) {
     let rows = vec![GraphRow {
         index: 0,
         alias: NONE,
-        oid: Oid::zero(),
+        oid: Oid::ZERO_SHA1,
         summary: "uncommitted".to_string(),
         committer_date: String::new(),
         committer_name: String::new(),

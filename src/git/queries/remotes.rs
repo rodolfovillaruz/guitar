@@ -14,9 +14,9 @@ pub struct RemoteEntry {
 pub fn list_remotes(repo: &Repository) -> Result<Vec<RemoteEntry>, git2::Error> {
     let mut entries = Vec::new();
 
-    for name in repo.remotes()?.iter().flatten() {
+    for name in repo.remotes()?.iter().filter_map(|name| name.ok().flatten()) {
         let remote = repo.find_remote(name)?;
-        entries.push(RemoteEntry { name: name.to_string(), url: remote.url().unwrap_or_default().to_string(), push_url: remote.pushurl().map(str::to_string) });
+        entries.push(RemoteEntry { name: name.to_string(), url: remote.url().unwrap_or_default().to_string(), push_url: remote.pushurl().ok().flatten().map(str::to_string) });
     }
 
     entries.sort_by(|a, b| a.name.cmp(&b.name));
@@ -55,7 +55,7 @@ fn repo_config_remote(repo: &Repository, key: &str, remotes: &[RemoteEntry]) -> 
 fn current_branch_upstream_remote(repo: &Repository, remotes: &[RemoteEntry]) -> Option<String> {
     let branch = get_current_branch(repo)?;
     let refname = format!("refs/heads/{branch}");
-    repo.branch_upstream_remote(&refname).ok().and_then(|remote| remote.as_str().map(str::to_string)).filter(|name| remote_exists(remotes, name))
+    repo.branch_upstream_remote(&refname).ok().and_then(|remote| remote.as_str().ok().map(str::to_string)).filter(|name| remote_exists(remotes, name))
 }
 
 fn remote_exists(remotes: &[RemoteEntry], name: &str) -> bool {

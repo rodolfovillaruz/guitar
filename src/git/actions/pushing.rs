@@ -69,7 +69,7 @@ pub fn push_tags(repo_path: &str, remote_name: &str, auth_session: AuthSession) 
             push_options.remote_callbacks(auth_push_callbacks(attempt.clone(), config));
 
             // Build one explicit refspec per local tag so existing branches are untouched.
-            let tag_refspecs = repo.tag_names(None)?.iter().flatten().map(|tag_name| format!("refs/tags/{0}:refs/tags/{0}", tag_name)).collect::<Vec<_>>();
+            let tag_refspecs = repo.tag_names(None)?.iter().filter_map(|name| name.ok().flatten()).map(|tag_name| format!("refs/tags/{0}:refs/tags/{0}", tag_name)).collect::<Vec<_>>();
 
             if tag_refspecs.is_empty() {
                 return Ok(());

@@ -9,7 +9,7 @@ pub fn stash(repo: &mut Repository) -> Result<Oid, git2::Error> {
         let head = repo.head()?;
         let commit = head.peel_to_commit()?;
         let short_id = commit.id().to_string()[..7].to_string();
-        let summary = commit.summary().unwrap_or("WIP");
+        let summary = commit.summary().ok().flatten().unwrap_or("WIP");
         format!("{} {}", short_id, summary)
     };
 

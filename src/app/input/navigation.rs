@@ -1605,7 +1605,7 @@ impl App {
                 return;
             };
 
-            if oid == git2::Oid::zero() {
+            if oid == git2::Oid::ZERO_SHA1 {
                 return;
             }
 
@@ -1655,7 +1655,7 @@ impl App {
                 return;
             };
 
-            if oid == git2::Oid::zero() {
+            if oid == git2::Oid::ZERO_SHA1 {
                 self.select_graph_index(1);
                 return;
             }

@@ -31,8 +31,8 @@ pub fn get_tag_oids(repo: &Repository, oids: &mut Oids) -> HashMap<u32, Vec<Stri
 
     for reference in repo.references().unwrap().flatten() {
         let name = match reference.name() {
-            Some(n) => n,
-            None => continue,
+            Ok(n) => n,
+            Err(_) => continue,
         };
 
         let stripped = match name.strip_prefix("refs/tags/") {
@@ -74,7 +74,7 @@ pub fn get_current_branch(repo: &Repository) -> Option<String> {
     if !head.is_branch() {
         return None;
     }
-    head.shorthand().map(|s| s.to_string())
+    head.shorthand().ok().map(|s| s.to_string())
 }
 
 // Return all git timestamp variants for refs that need date metadata.

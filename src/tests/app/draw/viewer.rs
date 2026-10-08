@@ -118,7 +118,7 @@ fn unstaged_added_file_viewer_renders_added_lines() {
     write(&dir.path, "new.txt", "alpha\nbeta\n");
 
     let mut app = viewer_app();
-    app.update_viewer(Oid::zero(), &repo);
+    app.update_viewer(Oid::ZERO_SHA1, &repo);
 
     let mut terminal = Terminal::new(TestBackend::new(80, 6)).unwrap();
     terminal.draw(|frame| app.draw_viewer(frame)).unwrap();

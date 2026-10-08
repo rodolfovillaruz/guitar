@@ -70,7 +70,7 @@ fn clean_cherrypick_commits_with_edited_message() {
     let head = repo.head().unwrap().peel_to_commit().unwrap();
     assert_eq!(head.id(), oid);
     assert_eq!(head.parent(0).unwrap().id(), main);
-    assert_eq!(head.summary(), Some("cherrypicked: feature"));
+    assert_eq!(head.summary().unwrap(), Some("cherrypicked: feature"));
     assert!(!is_cherrypick_in_progress(&repo));
     assert!(!message_path(&repo).exists());
     let _ = fs::remove_dir_all(path);
@@ -101,7 +101,7 @@ fn conflict_then_continue_commits_with_persisted_message() {
 
     let head = repo.head().unwrap().peel_to_commit().unwrap();
     assert_eq!(head.id(), oid);
-    assert_eq!(head.summary(), Some("cherrypicked: feature"));
+    assert_eq!(head.summary().unwrap(), Some("cherrypicked: feature"));
     assert_eq!(fs::read_to_string(path.join("file.txt")).unwrap(), "resolved\n");
     assert!(!is_cherrypick_in_progress(&repo));
     assert!(!message_path(&repo).exists());

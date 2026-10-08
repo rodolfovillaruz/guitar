@@ -311,7 +311,7 @@ impl App {
     pub fn open_viewer(&mut self, repo: &git2::Repository) {
         if let Some(file_name) = self.get_selected_file_name() {
             self.file_name = Some(file_name);
-            let oid = if self.graph_selected != 0 { self.graph_oid_at(self.graph_selected).unwrap_or_else(Oid::zero) } else { Oid::zero() };
+            let oid = if self.graph_selected != 0 { self.graph_oid_at(self.graph_selected).unwrap_or(Oid::ZERO_SHA1) } else { Oid::ZERO_SHA1 };
             self.update_viewer(oid, repo);
             self.viewport = Viewport::Viewer;
         }
@@ -331,7 +331,7 @@ impl App {
             ViewerMode::Hunks => self.viewer_hunks.get(self.viewer_selected).copied().unwrap_or(0),
             ViewerMode::Split => self.split_unified_index(self.viewer_selected),
         };
-        let oid = if self.graph_selected != 0 { self.graph_oid_at(self.graph_selected).unwrap_or_else(Oid::zero) } else { Oid::zero() };
+        let oid = if self.graph_selected != 0 { self.graph_oid_at(self.graph_selected).unwrap_or(Oid::ZERO_SHA1) } else { Oid::ZERO_SHA1 };
 
         self.update_viewer(oid, &repo);
         self.viewer_mode = old_mode;
@@ -353,7 +353,7 @@ impl App {
         // The selected filename is owned by App so viewer reloads can reuse it.
         let filename = self.file_name.clone().unwrap();
 
-        if oid == Oid::zero()
+        if oid == Oid::ZERO_SHA1
             && self.uncommitted.conflicts.iter().any(|path| path == &filename)
             && let Ok(Some(conflict)) = get_conflict_file(repo, &filename)
         {
@@ -362,7 +362,7 @@ impl App {
         }
 
         // Oid::zero represents the uncommitted pseudo-row and reads from the working tree.
-        let (original_lines, hunks) = if oid == Oid::zero() {
+        let (original_lines, hunks) = if oid == Oid::ZERO_SHA1 {
             (get_file_at_workdir(repo, &filename), get_file_diff_at_workdir(repo, &filename).unwrap_or_default())
         } else {
             (get_file_at_oid(repo, oid, &filename), get_file_diff_at_oid(repo, oid, &filename).unwrap_or_default())

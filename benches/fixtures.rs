@@ -459,7 +459,7 @@ fn push_commit(buffer: &mut Buffer, rows: &mut Vec<GraphRow>, index: usize, alia
     let mut row = GraphRow {
         index,
         alias,
-        oid: Oid::zero(),
+        oid: Oid::ZERO_SHA1,
         summary,
         committer_date: "2026-06-20 12:34".to_string(),
         committer_name: "Benchmark Runner".to_string(),

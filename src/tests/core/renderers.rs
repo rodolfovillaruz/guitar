@@ -166,7 +166,7 @@ fn date_projection_renders_commit_dates_and_blanks_uncommitted_rows() {
     let theme = Theme::classic();
     let mut commit = graph_row(1, Oid::from_str("2222222222222222222222222222222222222222").unwrap(), "commit");
     commit.committer_date = "2026-06-17 14:23".to_string();
-    let mut uncommitted = graph_row(0, Oid::zero(), "");
+    let mut uncommitted = graph_row(0, Oid::ZERO_SHA1, "");
     uncommitted.alias = NONE;
     uncommitted.committer_date = "ignored".to_string();
 
@@ -181,7 +181,7 @@ fn committer_projection_renders_fixed_width_names_and_blanks_uncommitted_rows() 
     let theme = Theme::classic();
     let mut commit = graph_row(1, Oid::from_str("2222222222222222222222222222222222222222").unwrap(), "commit");
     commit.committer_name = "Very Long Committer Name".to_string();
-    let mut uncommitted = graph_row(0, Oid::zero(), "");
+    let mut uncommitted = graph_row(0, Oid::ZERO_SHA1, "");
     uncommitted.alias = NONE;
     uncommitted.committer_name = "ignored".to_string();
 

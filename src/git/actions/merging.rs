@@ -65,7 +65,7 @@ fn commit_merge(repo: &Repository, target_oid: Oid) -> Result<Oid, Error> {
 
 fn fast_forward(repo: &Repository, target_oid: Oid) -> Result<MergeOutcome, Error> {
     let mut head = repo.head()?;
-    let head_name = head.name().ok_or_else(|| Error::from_str("HEAD reference name is not valid UTF-8"))?.to_string();
+    let head_name = head.name().map_err(|_| Error::from_str("HEAD reference name is not valid UTF-8"))?.to_string();
     let message = format!("Fast-forward: setting {head_name} to {target_oid}");
 
     head.set_target(target_oid, &message)?;

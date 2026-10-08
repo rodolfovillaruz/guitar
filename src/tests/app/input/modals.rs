@@ -421,7 +421,7 @@ fn add_remote_flow_creates_remote_and_returns_to_settings() {
     assert_eq!(app.viewport, Viewport::Settings);
     assert_eq!(app.focus, Focus::Viewport);
     assert!(app.modal_input.value().is_empty());
-    assert_eq!(Repository::open(path).unwrap().find_remote("origin").unwrap().url(), Some("https://example.com/repo.git"));
+    assert_eq!(Repository::open(path).unwrap().find_remote("origin").unwrap().url().unwrap(), "https://example.com/repo.git");
 }
 
 #[test]
@@ -498,7 +498,7 @@ fn edit_remote_fetch_url_flow_updates_url() {
 
     app.handle_modal_key_event(key(KeyCode::Enter, KeyModifiers::NONE));
 
-    assert_eq!(Repository::open(path).unwrap().find_remote("origin").unwrap().url(), Some("https://example.com/renamed.git"));
+    assert_eq!(Repository::open(path).unwrap().find_remote("origin").unwrap().url().unwrap(), "https://example.com/renamed.git");
     assert_eq!(app.focus, Focus::Viewport);
     assert_eq!(app.viewport, Viewport::Settings);
 }
@@ -515,7 +515,7 @@ fn edit_remote_empty_push_url_clears_push_url() {
 
     app.handle_modal_key_event(key(KeyCode::Enter, KeyModifiers::NONE));
 
-    assert_eq!(Repository::open(path).unwrap().find_remote("origin").unwrap().pushurl(), None);
+    assert_eq!(Repository::open(path).unwrap().find_remote("origin").unwrap().pushurl().unwrap(), None);
 }
 
 #[test]

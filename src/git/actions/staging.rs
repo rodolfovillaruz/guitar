@@ -12,7 +12,7 @@ pub fn stage_all(repo: &Repository) -> Result<(), Error> {
     let submodule_paths = submodules.iter().map(|entry| entry.path().to_path_buf()).collect::<Vec<_>>();
 
     for entry in statuses.iter() {
-        if let Some(path) = entry.path() {
+        if let Ok(path) = entry.path() {
             if is_submodule_status_path(path, &submodule_paths) {
                 continue;
             }

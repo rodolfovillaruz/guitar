@@ -49,8 +49,8 @@ impl App {
                 let commit = repo.find_commit(oid).unwrap();
                 let author = commit.author();
                 let committer = commit.committer();
-                let summary = commit.summary().map(str::to_string).unwrap_or_else(|| format!("{} {}", self.symbols.empty_state.mark, empty::NO_SUMMARY()));
-                let body = commit.body().map(str::to_string).unwrap_or_else(|| format!("{} {}", self.symbols.empty_state.mark, empty::NO_BODY()));
+                let summary = commit.summary().ok().flatten().map(str::to_string).unwrap_or_else(|| format!("{} {}", self.symbols.empty_state.mark, empty::NO_SUMMARY()));
+                let body = commit.body().ok().flatten().map(str::to_string).unwrap_or_else(|| format!("{} {}", self.symbols.empty_state.mark, empty::NO_BODY()));
 
                 // Sections are plain list rows so they scroll with the same pane machinery.
                 lines = vec![

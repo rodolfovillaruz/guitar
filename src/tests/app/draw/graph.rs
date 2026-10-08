@@ -115,7 +115,7 @@ fn app_with_uncommitted_window(window_end: usize, history_len: usize, oid: Oid) 
         start: 0,
         end: window_end,
         head_alias: 1,
-        rows: (0..window_end).map(|index| if index == 0 { graph_row(index, NONE, Oid::zero(), "") } else { graph_row(index, index as u32, oid, &format!("row{index}")) }).collect(),
+        rows: (0..window_end).map(|index| if index == 0 { graph_row(index, NONE, Oid::ZERO_SHA1, "") } else { graph_row(index, index as u32, oid, &format!("row{index}")) }).collect(),
         history: graph_history(history_len),
         is_stale: false,
     });

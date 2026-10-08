@@ -32,7 +32,7 @@ impl App {
 
     fn submodule_name_for_status_path(repo: &Repository, path: &str) -> Option<String> {
         let target = Path::new(path);
-        repo.submodules().ok()?.into_iter().find(|submodule| submodule.path() == target).map(|submodule| submodule.name().map(str::to_string).unwrap_or_else(|| path.to_string()))
+        repo.submodules().ok()?.into_iter().find(|submodule| submodule.path() == target).map(|submodule| submodule.name().map(str::to_string).unwrap_or_else(|_| path.to_string()))
     }
 
     pub(crate) fn start_network_request(&mut self, request: NetworkRequest) {
@@ -1058,7 +1058,7 @@ impl App {
             };
 
             let original_message = match repo.find_commit(oid) {
-                Ok(commit) => Ok(commit.summary().unwrap_or(operations::CHERRYPICK_COMMIT_FALLBACK()).to_string()),
+                Ok(commit) => Ok(commit.summary().ok().flatten().unwrap_or(operations::CHERRYPICK_COMMIT_FALLBACK()).to_string()),
                 Err(error) => Err(error),
             };
 
@@ -1094,7 +1094,7 @@ impl App {
 
         let original_message = match repo.find_commit(oid) {
             Ok(commit) if commit.parent_count() > 1 => None,
-            Ok(commit) => Some(Ok(commit.summary().unwrap_or(operations::REVERT_COMMIT_FALLBACK()).to_string())),
+            Ok(commit) => Some(Ok(commit.summary().ok().flatten().unwrap_or(operations::REVERT_COMMIT_FALLBACK()).to_string())),
             Err(error) => Some(Err(error)),
         };
 

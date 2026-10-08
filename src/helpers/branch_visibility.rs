@@ -37,7 +37,7 @@ pub fn current_branch_names(repo: &Repository) -> HashSet<String> {
             continue;
         }
 
-        let Some(name) = reference.name() else {
+        let Ok(name) = reference.name() else {
             continue;
         };
 

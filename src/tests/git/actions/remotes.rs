@@ -20,7 +20,7 @@ fn add_remote_creates_remote_with_url() {
 
     add_remote(&repo, "origin", "https://example.com/repo.git").unwrap();
 
-    assert_eq!(repo.find_remote("origin").unwrap().url(), Some("https://example.com/repo.git"));
+    assert_eq!(repo.find_remote("origin").unwrap().url().unwrap(), "https://example.com/repo.git");
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn rename_remote_updates_remote_name() {
     rename_remote(&repo, "origin", "upstream").unwrap();
 
     assert!(repo.find_remote("origin").is_err());
-    assert_eq!(repo.find_remote("upstream").unwrap().url(), Some("https://example.com/repo.git"));
+    assert_eq!(repo.find_remote("upstream").unwrap().url().unwrap(), "https://example.com/repo.git");
 }
 
 #[test]
@@ -66,8 +66,8 @@ fn edit_fetch_and_push_urls() {
     set_remote_push_url(&repo, "origin", Some("ssh://example.com/renamed.git")).unwrap();
 
     let remote = repo.find_remote("origin").unwrap();
-    assert_eq!(remote.url(), Some("https://example.com/renamed.git"));
-    assert_eq!(remote.pushurl(), Some("ssh://example.com/renamed.git"));
+    assert_eq!(remote.url().unwrap(), "https://example.com/renamed.git");
+    assert_eq!(remote.pushurl().unwrap(), Some("ssh://example.com/renamed.git"));
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn empty_push_url_clears_dedicated_push_url() {
 
     set_remote_push_url(&repo, "origin", Some("")).unwrap();
 
-    assert_eq!(repo.find_remote("origin").unwrap().pushurl(), None);
+    assert_eq!(repo.find_remote("origin").unwrap().pushurl().unwrap(), None);
 }
 
 #[test]

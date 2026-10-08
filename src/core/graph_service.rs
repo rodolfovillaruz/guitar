@@ -324,7 +324,7 @@ fn file_history_rows(walk_ctx: &Walker, path: &str, symbols: &SymbolTheme) -> Re
             continue;
         };
 
-        let summary = repo.find_commit(oid).ok().and_then(|commit| commit.summary().map(str::to_string)).unwrap_or_else(|| no_message(symbols));
+        let summary = repo.find_commit(oid).ok().and_then(|commit| commit.summary().ok().flatten().map(str::to_string)).unwrap_or_else(|| no_message(symbols));
         let short_oid = oid.to_string().chars().take(8).collect();
         rows.push(GraphFileHistoryRow { graph_index, oid, short_oid, summary, status });
     }
@@ -348,7 +348,7 @@ fn graph_rows(walk_ctx: &Walker, worktrees: &Worktrees, hidden_branch_names: &Ha
         let (summary, committer_date, committer_name, is_merge_commit) = if is_uncommitted {
             (String::new(), String::new(), String::new(), false)
         } else if let Ok(commit) = repo.find_commit(oid) {
-            let summary = commit.summary().map(str::to_string).unwrap_or_else(|| no_message(symbols));
+            let summary = commit.summary().ok().flatten().map(str::to_string).unwrap_or_else(|| no_message(symbols));
             let committer = commit.committer();
             let committer_date = timestamp_to_utc_date_time(committer.when());
             let committer_name = committer.name().unwrap_or(common::UNKNOWN()).to_string();
@@ -419,7 +419,7 @@ fn pane_rows(pane: GraphPane, walk_ctx: &Walker) -> Vec<GraphPaneRow> {
                 .iter()
                 .map(|&alias| {
                     let oid = *walk_ctx.oids.get_oid_by_alias(alias);
-                    let summary = repo.find_commit(oid).ok().and_then(|commit| commit.summary().map(str::to_string)).unwrap_or_else(|| status_text::STASH().to_string());
+                    let summary = repo.find_commit(oid).ok().and_then(|commit| commit.summary().ok().flatten().map(str::to_string)).unwrap_or_else(|| status_text::STASH().to_string());
                     GraphPaneRow::Stash { alias, summary, lane: walk_ctx.stashes_lanes.get(&alias).copied(), graph_index: index_map.get(&alias).copied() }
                 })
                 .collect()

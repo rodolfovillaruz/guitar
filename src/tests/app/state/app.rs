@@ -296,7 +296,7 @@ fn restore_lookup_missing_after_completion_clears_pending_restore() {
 fn explicit_graph_navigation_clears_pending_restore() {
     let mut app = App { viewport: Viewport::Graph, focus: Focus::Viewport, graph_selected: 1, ..Default::default() };
     app.graph.total = 5;
-    app.graph.pending_selection_restore = Some(GraphSelectionRestore { oid: git2::Oid::zero(), selected_offset: 0 });
+    app.graph.pending_selection_restore = Some(GraphSelectionRestore { oid: git2::Oid::ZERO_SHA1, selected_offset: 0 });
 
     app.on_scroll_down();
 
