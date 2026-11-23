@@ -117,7 +117,12 @@ cargo binstall --git https://github.com/rodolfovillaruz/guitar guitar
 ```
 
 This downloads the matching release binary for Linux (x86_64), macOS (Apple Silicon),
-or Windows (x86_64) instead of compiling from source.
+or Windows (x86_64) from Cloudflare R2 instead of compiling from source.
+
+The latest binaries can also be downloaded directly:
+[Linux](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar-linux) ·
+[macOS](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar-macos) ·
+[Windows](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar.exe)
 
 Build from source:
 

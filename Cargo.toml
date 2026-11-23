@@ -11,19 +11,20 @@ readme = "README.md"
 license = "GPL-3.0-only"
 
 # `cargo binstall guitar` support.
-# The CI release job (.github/workflows/ci.yml) uploads raw, unarchived binaries
-# with irregular names, so each supported target is mapped explicitly.
+# The CI `upload-r2` job (.github/workflows/ci.yml) uploads raw, unarchived
+# binaries to the Cloudflare R2 bucket `guitar` under `v<version>/`. Names are
+# irregular, so each supported target is mapped explicitly.
 [package.metadata.binstall]
 pkg-fmt = "bin"
 
 [package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
-pkg-url = "{ repo }/releases/download/v{ version }/{ name }-linux"
+pkg-url = "https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/v{ version }/{ name }-linux"
 
 [package.metadata.binstall.overrides.aarch64-apple-darwin]
-pkg-url = "{ repo }/releases/download/v{ version }/{ name }-macos"
+pkg-url = "https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/v{ version }/{ name }-macos"
 
 [package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
-pkg-url = "{ repo }/releases/download/v{ version }/{ name }.exe"
+pkg-url = "https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/v{ version }/{ name }.exe"
 
 [dependencies]
 chrono = "0.4"
