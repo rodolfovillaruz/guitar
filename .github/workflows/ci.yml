@@ -93,7 +93,8 @@ jobs:
       # R2 rejects the default checksum headers sent by recent AWS CLI v2 releases.
       AWS_REQUEST_CHECKSUM_CALCULATION: when_required
       AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
-      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      # The bucket is in the EU jurisdiction, which has its own endpoint.
+      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.eu.r2.cloudflarestorage.com
       R2_BUCKET: guitar
     steps:
       - name: Download all artifacts
