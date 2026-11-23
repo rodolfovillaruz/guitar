@@ -118,11 +118,31 @@ cargo binstall --git https://github.com/rodolfovillaruz/guitar guitar
 
 This downloads the matching release binary for Linux (x86_64), macOS (Apple Silicon),
 or Windows (x86_64) from Cloudflare R2 instead of compiling from source.
+Every binary is signed with [minisign](https://jedisct1.github.io/minisign/), and
+`cargo binstall` verifies the signature before installing
+(look for `Verified signature for package 'guitar'` in its output).
 
 The latest binaries can also be downloaded directly:
 [Linux](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar-linux) ·
 [macOS](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar-macos) ·
 [Windows](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar.exe)
+
+### Verifying a downloaded binary
+
+Each binary has a signature next to it with `.sig` appended
+(e.g. [`guitar-linux.sig`](https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/latest/guitar-linux.sig)),
+on both R2 and the GitHub Releases page. To check one by hand, install
+[minisign](https://jedisct1.github.io/minisign/) and run:
+
+```bash
+minisign -V -P RWSpIHXfptOSn6wf9ye4hIkEhiAYX5LoeHK56U+x9V5rxYrDwByillUy \
+  -m guitar-linux -x guitar-linux.sig
+```
+
+Swap in `guitar-macos` or `guitar.exe` for the other platforms. A good binary prints
+`Signature and comment signature verified`; anything else means the file was
+modified or corrupted, so don't run it. The public key above is the same one
+in `[package.metadata.binstall.signing]` in `Cargo.toml`.
 
 Build from source:
 
