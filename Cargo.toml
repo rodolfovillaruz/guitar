@@ -26,6 +26,12 @@ pkg-url = "https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/v{ version }/{ na
 [package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
 pkg-url = "https://pub-843b96db8a78435baf0260e9fec2c546.r2.dev/v{ version }/{ name }.exe"
 
+# Each binary is signed in CI with minisign; binstall downloads `<binary>.sig`
+# from next to it and refuses to install if the signature doesn't verify.
+[package.metadata.binstall.signing]
+algorithm = "minisign"
+pubkey = "RWSpIHXfptOSn6wf9ye4hIkEhiAYX5LoeHK56U+x9V5rxYrDwByillUy"
+
 [dependencies]
 chrono = "0.4"
 crossterm = "0.29.0"

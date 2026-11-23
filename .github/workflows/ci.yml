@@ -58,12 +58,15 @@ jobs:
             target/release/guitar-macos
             target/release/guitar.exe
 
-  release:
-    name: Create GitHub Release
+  sign:
+    name: Sign binaries
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')   # only run on tag push
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
@@ -75,15 +78,60 @@ jobs:
           cp -r artifacts/*/* artifacts_flat/ || true
           ls -R artifacts_flat
 
+      - name: Install minisign
+        run: sudo apt-get update -q && sudo apt-get install -y -q minisign
+
+      # Writes <binary>.sig next to each binary, which is where cargo-binstall
+      # looks for it (see [package.metadata.binstall.signing] in Cargo.toml).
+      - name: Sign binaries
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+        run: |
+          key="$RUNNER_TEMP/minisign.key"
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
+          for f in artifacts_flat/*; do
+            minisign -S -s "$key" -m "$f" -x "$f.sig" \
+              -t "guitar ${GITHUB_REF_NAME} $(basename "$f")"
+          done
+          rm -f "$key"
+
+      # Fails the release if the secret key doesn't match the public key
+      # that binstall users verify against.
+      - name: Verify signatures against Cargo.toml public key
+        run: |
+          pubkey=$(sed -n 's/^pubkey = "\(.*\)"$/\1/p' Cargo.toml)
+          for f in artifacts_flat/*.sig; do
+            minisign -V -P "$pubkey" -m "${f%.sig}" -x "$f"
+          done
+
+      - name: Upload signed binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: signed-binaries
+          path: artifacts_flat/*
+
+  release:
+    name: Create GitHub Release
+    needs: sign
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')   # only run on tag push
+    steps:
+      - name: Download signed binaries
+        uses: actions/download-artifact@v8
+        with:
+          name: signed-binaries
+          path: artifacts_flat
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: artifacts_flat/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   upload-r2:
     name: Upload binaries to Cloudflare R2
-    needs: build
+    needs: sign
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')   # only run on tag push
     env:
@@ -97,16 +145,11 @@ jobs:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.eu.r2.cloudflarestorage.com
       R2_BUCKET: guitar
     steps:
-      - name: Download all artifacts
+      - name: Download signed binaries
         uses: actions/download-artifact@v8
         with:
-          path: artifacts
-
-      - name: Flatten artifact directory
-        run: |
-          mkdir -p artifacts_flat
-          cp -r artifacts/*/* artifacts_flat/ || true
-          ls -R artifacts_flat
+          name: signed-binaries
+          path: artifacts_flat
 
       - name: Upload versioned binaries
         run: |
